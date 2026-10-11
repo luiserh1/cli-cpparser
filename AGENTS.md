@@ -1,0 +1,142 @@
+# Instructions for AI agents
+
+This project follows **cpp-policy** (fetched by CMake; rules in
+`build/<preset>/_deps/cpp_policy-src/POLICY.md`, or
+https://github.com/luiserh1/cpp-policy/blob/main/POLICY.md). That folder holds
+the release of the last configure: after the pin in `CMakeLists.txt` moves,
+run `cmake --preset <preset>` before reading it.
+
+## The rules in short
+
+- C++23, LLVM Clang 23. Modern subset of the C++ Core Guidelines: no raw
+  `new`/`delete`, no C arrays, no pointer arithmetic, no C-style casts, no
+  `NULL`, no macros for constants, always initialize variables.
+- No `short`, `long` or `long long`: use `<cstdint>` fixed-width types,
+  `std::size_t` for sizes, or plain `int`.
+- Naming: `PascalCase` for types, `snake_case` for everything else, a
+  trailing `_` on private data members, `UPPER_CASE` macros.
+- Design: plain data is a `struct` with free functions; a `class` only to
+  protect an invariant or own a resource; `enum class` or `std::variant` for
+  a closed set of kinds; no inheritance without asking first.
+- Functions: at most 80 lines, 6 parameters and 4 levels of nesting; files at
+  most 350 lines (aim for 250).
+- Expected failures return `std::expected`; exceptions only for truly
+  exceptional cases. Every exception is caught in `main`, and at the top of
+  every thread function.
+- Threads: `std::jthread` and `std::scoped_lock`; no data shared between
+  threads without synchronization.
+- Low-level code (OS APIs, the C runtime, reinterpret casts) lives only in
+  `src/lowlevel/`, behind a safe interface.
+- Dependencies: ask before adding one. Each `vcpkg.json` entry needs
+  `"default-features": false` and a `"$reason"`.
+  A dependency's headers are included only from the modules that
+  `cpp_policy_confine_includes()` in `CMakeLists.txt` allows.
+
+## Layers
+
+`src/` is split into modules, one folder each, grouped into layers. A file
+may include headers from its own layer or a lower one, never a higher one,
+and always from the `src/` root (`#include "<module>/<header>.hpp"`).
+
+- **The layers are declared in `cpp_policy_layers()` in `CMakeLists.txt`**,
+  from the lowest up. That call is what the audit enforces, so it is always
+  right; read it there.
+- `README.md` says what each module is for. Keep it up to date in the commit
+  that adds or changes a module.
+- A new module: add it to `cpp_policy_layers()` and to `README.md`. Neither
+  needs the owner.
+
+## Planned work
+
+`ROADMAP.md` says what comes next. Read it before you start. Ask before doing
+anything it lists under "Out of scope" or "Not planned". In the commit that
+finishes an item, tick it (or remove it from "Later"), and add the change,
+with its reason, to `CHANGELOG.md` under "Unreleased". A cpp-policy upgrade
+only updates the "Policy:" line there, plus an entry for anything it changed
+in this project's own code or tests.
+
+## Tests
+
+- One doctest program per kind and module: `cpp_policy_add_tests(unit <module>
+  SOURCES ...)` in `tests/CMakeLists.txt`. Unit tests use no files, network or
+  threads, share no state and finish in well under a second; others are
+  `integration`. A module's unit tests run together in one process; run one
+  by hand with `<program> --test-case="<name>"`.
+- One behavior per `TEST_CASE`, named as a sentence about it. Tables of cases
+  go in a loop with `CAPTURE`.
+- `REQUIRE` only for what the rest of the test depends on (a value before
+  `*result` or `.error()`); `CHECK` for everything else. Compare with `==` so
+  failures print both values.
+- A fix for a bug comes with a test that fails without it, in
+  `TEST_SUITE("regression")`.
+- In a port, tests compare with the original's output on the same inputs.
+- No sleeps, no skipped tests, no state shared between test cases.
+- The release workflow checks each program's size budget
+  (`cpp_policy_size_budget()` in `CMakeLists.txt`). Never raise a budget
+  yourself: if a change goes over it, shrink the change or ask the owner.
+- A command that processes input of unbounded size has a memory test with
+  `cpp_policy::peak_heap_bytes()` (POLICY.md 13.5). It may keep 1 KiB per
+  input (its name and a small record). Never raise that budget yourself: if
+  a command needs more, say what it keeps and ask the owner.
+
+## Before you say you are done
+
+After editing C++ files, check them right away (a few seconds per file; pre-commit
+does the same for the staged files):
+
+```
+sh tools/hooks/tidy-files <file>...
+```
+
+It reports what the gate will say about those files, without the tests: the
+format, the file's length, suppressions and `// boundary:` comments,
+test-case names, and clang-tidy. It says "NOT CHECKED" for a file this build
+doesn't compile: for a new file, add it to `CMakeLists.txt` first.
+
+Run the full gate and make sure it passes, **at the end of each stage of
+work and always before anything joins the main line** (a stage is what ends
+in a push or a merge):
+
+```
+sh tools/hooks/gate
+```
+
+The gate and `git push` (whose hook runs the gate) need `VCPKG_ROOT` in the
+shell of that same command: a variable set in an earlier command is gone.
+
+Not before every commit. Between commits, the commit hook and `tidy-files`
+check the files you changed; run the tests of the modules you touched as
+well (`ctest --preset check -R "<module>"`).
+
+If the stage added or changed tests, also run the release workflow once
+before it ends: a test can pass in the check build and fail there.
+
+```
+sh tools/hooks/gate release
+```
+
+It runs `cmake --workflow --preset check` (`win-check` on Windows), one gate
+at a time on the machine, and ends with `gate: passed` or `gate: FAILED`.
+Read that line, or the command's own exit code: don't chain other commands
+after it and read theirs.
+
+Formatting problems: `sh tools/hooks/tidy-files --format <file>...` (or every
+file: `cmake --build --preset check --target policy-format-fix`).
+
+To check a commit message before the hooks run:
+`sh tools/hooks/commit-msg <file with the message>`.
+
+## Never
+
+- Add `NOLINT` suppressions outside `src/lowlevel/`. Inside it, name the
+  check and give a reason: `// NOLINT(check-name): reason`.
+- Edit `.clang-tidy`, `.clang-format`, `CMakePresets.json`, compile flags in
+  `CMakeLists.txt`, `tools/`, `.github/`, `AGENTS.md` or agent settings
+  (`.claude/`).
+- Create a `CLAUDE.md`: Claude Code reads this file only while there is none.
+- Bypass git hooks (`--no-verify`, or overriding `core.hooksPath`).
+- "Fix" a toolchain error by changing the build. If the compiler check fails,
+  report it: the machine's LLVM installation or `PATH` needs fixing.
+
+If a rule seems wrong or impossible to satisfy, stop and explain what it
+prevents instead of working around it. The owner takes it to cpp-policy.

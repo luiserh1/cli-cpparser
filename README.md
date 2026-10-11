@@ -1,0 +1,55 @@
+# CliCpparser
+
+What CliCpparser does, in a sentence or two.
+
+## Building
+
+Requirements: LLVM 23 (clang, clang-tidy, clang-format), CMake 3.29 or later
+and Ninja, plus vcpkg, with `VCPKG_ROOT` set to its folder.
+The cpp-policy README ("Setup per platform") says how to install them.
+
+Dependencies come from vcpkg (`vcpkg.json`, pinned by its
+`builtin-baseline`); set `VCPKG_ROOT` before configuring.
+
+```
+sh tools/hooks/gate                    # the gate: audit, format, build with clang-tidy, tests
+cmake --workflow --preset unit         # quick: no clang-tidy, -O1, unit tests only
+cmake --workflow --preset release      # optimized build, size budget, benchmarks
+```
+
+On Windows the presets carry a `win-` prefix (`win-check`, `win-unit`,
+`win-release`).
+
+Enable the git hooks once per clone:
+
+```
+git config core.hooksPath tools/hooks
+```
+
+`pre-commit` runs the suppression audit, the format check and clang-tidy on
+the staged C++ files; `commit-msg` checks the message (Conventional Commits
+with a body that says why); `pre-push` runs the full gate. After editing C++
+files, `sh tools/hooks/tidy-files <file>...` checks just those files.
+
+This project follows [cpp-policy](https://github.com/luiserh1/cpp-policy),
+pinned in `CMakeLists.txt` (v0.33.5). `.clang-tidy`, `.clang-format`,
+`CMakePresets.json` and `tools/hooks/` are its copies and must not be edited
+here; upgrade with its `tools/upgrade.sh`.
+
+Every push runs the gate in GitHub Actions (`.github/workflows/ci.yml`).
+
+## Layout
+
+`src/` is split into layers, from the top down. Code may include headers from
+its own layer or a lower one:
+
+| Layer | Modules | Contents |
+|---|---|---|
+| 3 (top) | `main.cpp` | Program boundary |
+| 2 | `src/app/` | The program's logic |
+| 1 (bottom) | `src/lowlevel/` | Confined OS code |
+
+`tests/` has one doctest program per kind of test and module
+(`cpp_policy_add_tests()` in `tests/CMakeLists.txt`). CTest runs each test case
+on its own, named `<kind>/<module>/<test case>`: `ctest --preset dev -L unit`
+runs the unit tests, `-R <name>` one test.

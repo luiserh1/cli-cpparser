@@ -1,0 +1,509 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 29,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "unix",
+      "hidden": true,
+      "inherits": "base",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      },
+      "environment": {
+        "PATH": "/opt/homebrew/opt/llvm@23/bin:/usr/local/opt/llvm@23/bin:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin:/usr/lib/llvm-23/bin:$penv{PATH}"
+      }
+    },
+    {
+      "name": "windows",
+      "hidden": true,
+      "inherits": "base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      },
+      "environment": {
+        "PATH": "C:/Program Files/LLVM/bin;$penv{PATH}"
+      }
+    },
+    {
+      "name": "cfg-dev",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CPP_POLICY_SANITIZERS": "ON",
+        "CPP_POLICY_HARDENING": "debug"
+      }
+    },
+    {
+      "name": "cfg-debug",
+      "hidden": true,
+      "description": "Step-through debugging: no optimization, no sanitizers",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CPP_POLICY_HARDENING": "debug"
+      }
+    },
+    {
+      "name": "cfg-release",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CPP_POLICY_HARDENING": "fast"
+      }
+    },
+    {
+      "name": "cfg-check",
+      "hidden": true,
+      "inherits": "cfg-dev",
+      "cacheVariables": {
+        "CPP_POLICY_CLANG_TIDY": "ON"
+      }
+    },
+    {
+      "name": "cfg-tsan",
+      "hidden": true,
+      "description": "Data races (POLICY.md 2.8); ThreadSanitizer can't be combined with ASan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CPP_POLICY_THREAD_SANITIZER": "ON",
+        "CPP_POLICY_HARDENING": "debug"
+      }
+    },
+    {
+      "name": "cfg-windows-sanitized",
+      "hidden": true,
+      "description": "ASan needs the release C runtime and no /RTC1 (POLICY.md 7.3)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "cfg-optimized-tests",
+      "hidden": true,
+      "description": "Sanitized builds that run tests at -O1: 15-21 times faster than -O0, same checks (POLICY.md 14.1)",
+      "cacheVariables": {
+        "CMAKE_C_FLAGS_DEBUG": "-g -O1",
+        "CMAKE_CXX_FLAGS_DEBUG": "-g -O1"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "dev",
+      "inherits": [
+        "unix",
+        "cfg-dev"
+      ]
+    },
+    {
+      "name": "debug",
+      "displayName": "debug",
+      "inherits": [
+        "unix",
+        "cfg-debug"
+      ]
+    },
+    {
+      "name": "release",
+      "displayName": "release",
+      "inherits": [
+        "unix",
+        "cfg-release"
+      ]
+    },
+    {
+      "name": "check",
+      "displayName": "check",
+      "inherits": [
+        "unix",
+        "cfg-check",
+        "cfg-optimized-tests"
+      ]
+    },
+    {
+      "name": "unit",
+      "displayName": "unit",
+      "inherits": [
+        "unix",
+        "cfg-dev",
+        "cfg-optimized-tests"
+      ]
+    },
+    {
+      "name": "tsan",
+      "displayName": "tsan",
+      "inherits": [
+        "unix",
+        "cfg-tsan"
+      ]
+    },
+    {
+      "name": "win-dev",
+      "displayName": "dev (Windows)",
+      "inherits": [
+        "windows",
+        "cfg-windows-sanitized",
+        "cfg-dev"
+      ]
+    },
+    {
+      "name": "win-debug",
+      "displayName": "debug (Windows)",
+      "inherits": [
+        "windows",
+        "cfg-debug"
+      ]
+    },
+    {
+      "name": "win-release",
+      "displayName": "release (Windows)",
+      "inherits": [
+        "windows",
+        "cfg-release"
+      ]
+    },
+    {
+      "name": "win-check",
+      "displayName": "check (Windows)",
+      "inherits": [
+        "windows",
+        "cfg-windows-sanitized",
+        "cfg-check"
+      ]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "unit",
+      "configurePreset": "unit"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "check-first",
+      "configurePreset": "check",
+      "targets": [
+        "policy-audit",
+        "policy-format-check"
+      ]
+    },
+    {
+      "name": "check",
+      "configurePreset": "check",
+      "targets": [
+        "all",
+        "policy-audit",
+        "policy-format-check"
+      ],
+      "nativeToolOptions": [
+        "-k",
+        "0"
+      ]
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "win-dev",
+      "configurePreset": "win-dev"
+    },
+    {
+      "name": "win-debug",
+      "configurePreset": "win-debug"
+    },
+    {
+      "name": "win-release",
+      "configurePreset": "win-release"
+    },
+    {
+      "name": "win-check-first",
+      "configurePreset": "win-check",
+      "targets": [
+        "policy-audit",
+        "policy-format-check"
+      ]
+    },
+    {
+      "name": "win-check",
+      "configurePreset": "win-check",
+      "targets": [
+        "all",
+        "policy-audit",
+        "policy-format-check"
+      ],
+      "nativeToolOptions": [
+        "-k",
+        "0"
+      ]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      },
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1",
+        "LSAN_OPTIONS": "suppressions=${sourceDir}/build/${presetName}/cpp_policy_lsan.supp",
+        "MallocNanoZone": "0"
+      }
+    },
+    {
+      "name": "unit",
+      "inherits": "dev",
+      "filter": {
+        "include": {
+          "label": "^unit$"
+        }
+      },
+      "configurePreset": "unit"
+    },
+    {
+      "name": "check",
+      "configurePreset": "check",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      },
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1",
+        "LSAN_OPTIONS": "suppressions=${sourceDir}/build/${presetName}/cpp_policy_lsan.supp",
+        "MallocNanoZone": "0"
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      }
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      }
+    },
+    {
+      "name": "win-dev",
+      "configurePreset": "win-dev",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      }
+    },
+    {
+      "name": "win-unit",
+      "inherits": "win-dev",
+      "filter": {
+        "include": {
+          "label": "^unit$"
+        }
+      }
+    },
+    {
+      "name": "win-check",
+      "configurePreset": "win-check",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      }
+    },
+    {
+      "name": "win-release",
+      "configurePreset": "win-release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 60,
+        "jobs": 4
+      }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "unit",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "unit"
+        },
+        {
+          "type": "build",
+          "name": "unit"
+        },
+        {
+          "type": "test",
+          "name": "unit"
+        }
+      ]
+    },
+    {
+      "name": "check",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "check"
+        },
+        {
+          "type": "build",
+          "name": "check-first"
+        },
+        {
+          "type": "build",
+          "name": "check"
+        },
+        {
+          "type": "test",
+          "name": "check"
+        }
+      ]
+    },
+    {
+      "name": "release",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "release"
+        },
+        {
+          "type": "build",
+          "name": "release"
+        },
+        {
+          "type": "test",
+          "name": "release"
+        }
+      ]
+    },
+    {
+      "name": "tsan",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "tsan"
+        },
+        {
+          "type": "build",
+          "name": "tsan"
+        },
+        {
+          "type": "test",
+          "name": "tsan"
+        }
+      ]
+    },
+    {
+      "name": "win-unit",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "win-dev"
+        },
+        {
+          "type": "build",
+          "name": "win-dev"
+        },
+        {
+          "type": "test",
+          "name": "win-unit"
+        }
+      ]
+    },
+    {
+      "name": "win-check",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "win-check"
+        },
+        {
+          "type": "build",
+          "name": "win-check-first"
+        },
+        {
+          "type": "build",
+          "name": "win-check"
+        },
+        {
+          "type": "test",
+          "name": "win-check"
+        }
+      ]
+    },
+    {
+      "name": "win-release",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "win-release"
+        },
+        {
+          "type": "build",
+          "name": "win-release"
+        },
+        {
+          "type": "test",
+          "name": "win-release"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+# cpp-policy formatting (clang-format 23). Do not edit in a consuming project.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+PointerAlignment: Left
+ReferenceAlignment: Left
+InsertBraces: true
+InsertNewlineAtEOF: true
+# Never re-wrap NOLINT comments: a wrapped NOLINTNEXTLINE would point at the wrong line.
+CommentPragmas: '^ *(IWYU pragma:|NOLINT)'
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BreakTemplateDeclarations: Yes
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Project headers first, then other <*.h>/<*.hpp> headers (third-party and
+  # operating-system headers), then the standard library.
+  - Regex: '^"'
+    Priority: 1
+  # Windows: <winsock2.h> must precede every other Windows header (they pull in
+  # <windows.h>, which includes the old <winsock.h> and causes redefinition errors).
+  - Regex: '^<winsock2\.h>$'
+    Priority: 2
+    SortPriority: 1
+  - Regex: '^<.*\.(h|hpp)>'
+    Priority: 2
+  - Regex: '^<'
+    Priority: 3

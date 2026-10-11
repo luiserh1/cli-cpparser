@@ -1,0 +1,38 @@
+#!/bin/sh
+# cpp-policy pre-commit hook: suppression audit, format check and clang-tidy on the staged C++
+# files (POLICY.md 8).
+# Copy unchanged into the project's tools/hooks/ and enable once per clone with:
+#   git config core.hooksPath tools/hooks
+set -e
+
+# The checks read the files on disk, but git commits the staged version. Say so
+# when the two differ, so a pass or failure isn't mistaken for the commit's.
+unstaged=$(git diff --name-only)
+if [ -n "$unstaged" ]; then
+    echo "pre-commit: warning: checking the working folder; these files have unstaged changes:"
+    echo "$unstaged" | sed 's/^/  /'
+fi
+
+# The check presets are per platform: `check` is disabled on Windows (Git for
+# Windows runs hooks with its own sh, where uname reports MINGW or MSYS).
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) preset=win-check ;;
+    *) preset=check ;;
+esac
+if [ ! -f "build/$preset/CMakeCache.txt" ]; then
+    cmake --preset "$preset" >/dev/null
+fi
+cmake --build --preset "$preset" --target policy-audit policy-format-check
+
+# clang-tidy on the staged files (tidy-files skips those that aren't C++), so findings turn up
+# at each commit rather than all at once at the gate. Deleted files aren't listed.
+# quotePath off: git would otherwise write a name with special characters in quotes.
+staged=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR)
+if [ -n "$staged" ]; then
+    # One name per line, split only there and without expanding wildcards: source files have
+    # no spaces (POLICY.md 2.7), but a test asset may.
+    IFS='
+'
+    set -f
+    sh tools/hooks/tidy-files $staged
+fi

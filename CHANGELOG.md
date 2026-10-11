@@ -1,0 +1,10 @@
+# Changelog
+
+Each entry says what changed and why. The version is defined once, in
+`project()` in `CMakeLists.txt`; each release is an annotated tag `v<version>`.
+
+Policy: cpp-policy v0.33.5.
+
+## Unreleased
+
+- Created with cpp-policy's `tools/new-project.sh`.
