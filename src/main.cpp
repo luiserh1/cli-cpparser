@@ -1,31 +1,24 @@
-#include "app/greeting.hpp"
-#include "lowlevel/environment.hpp"
+#include "app/run.hpp"
 
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
-#include <print>
-
-namespace {
-
-int run() {
-    const auto name = lowlevel::environment_variable("GREETING_NAME").value_or("world");
-    const auto text = app::greeting(name);
-    if (!text) {
-        std::println(stderr, "error: {}", app::describe(text.error()));
-        return EXIT_FAILURE;
-    }
-    std::println("{}", *text);
-    return EXIT_SUCCESS;
-}
-
-} // namespace
+#include <iostream>
+#include <span>
+#include <string>
+#include <vector>
 
 // Program boundary: the only place where every exception is caught (POLICY.md 3).
 // The handlers use std::fputs because std::println could itself throw.
-int main() {
+int main(int argc, char** argv) {
     try {
-        return run();
+        const std::span<char*> raw{argv, static_cast<std::size_t>(argc)};
+        std::vector<std::string> words;
+        for (std::size_t at = 1; at < raw.size(); ++at) {
+            words.emplace_back(raw[at]);
+        }
+        return app::run(words, std::cout, std::cerr);
     } catch (const std::exception& e) {
         std::fputs("unhandled exception: ", stderr);
         std::fputs(e.what(), stderr);

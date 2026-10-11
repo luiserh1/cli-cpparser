@@ -1,4 +1,11 @@
 # One doctest program per kind and module (cpp-policy POLICY.md 13). After each build, every
 # test case becomes a CTest test named <kind>/<module>/<test case>, labelled with its kind.
-cpp_policy_add_tests(unit app SOURCES test_app.cpp LIBRARIES cli_cpparser_core)
-cpp_policy_add_tests(unit lowlevel SOURCES test_lowlevel.cpp LIBRARIES cli_cpparser_core)
+# command, values and program are the library's modules; app is the example program, whose
+# tests are the library's end to end.
+# A module's tests are in unit/<module>.cpp, and command's in a second file as well.
+set(more_unit_command unit/command_refusals.cpp)
+foreach(module IN ITEMS command values program)
+    cpp_policy_add_tests(unit ${module} SOURCES unit/${module}.cpp ${more_unit_${module}}
+                         LIBRARIES cli_cpparser::cli_cpparser)
+endforeach()
+cpp_policy_add_tests(unit app SOURCES unit/app.cpp LIBRARIES cli_cpparser_core)
