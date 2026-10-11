@@ -33,7 +33,7 @@ follows cpp-policy's POLICY.md, section 11.5.
 ### Validation
 
 - [ ] The gate passes in CI on every system in `.github/workflows/ci.yml`.
-- [ ] The owner approves the example program's size budgets, measured in CI.
+- [x] The owner approves the example program's size budgets, measured in CI.
 - [ ] The release commit is tagged `v0.1.0` once its run is green.
 
 ## Later

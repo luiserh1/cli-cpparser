@@ -17,9 +17,10 @@ Policy: cpp-policy v0.33.5.
 - An example program in `src/` (`repeat`, `sum`, `pick`) in place of the template's
   greeting: it uses the library as a user would, and its tests check help text, messages
   and exit codes end to end.
-- The example program's size budget on macOS is 164864 bytes (was 109568), approved by the
-  owner: the old number was measured for the template's greeting program, which the example
-  replaced. Linux and Windows follow once CI has measured them.
+- The example program's size budgets are 164864 bytes on macOS (was 109568), 166912 on
+  Linux (was 93184) and 348160 on Windows (was 285696), approved by the owner: the old
+  numbers were measured for the template's greeting program, which the example replaced.
+  Each is the size measured in CI (156096, 158400 and 331264) plus 5%.
 - Decimal numbers are read by the library's own code and not by `std::from_chars`: macOS
   has that function for a `double` only from version 26 on, and the first CI run could not
   build the library on GitHub's macOS. A user of the library builds it on systems this
