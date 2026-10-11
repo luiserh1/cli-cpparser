@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <format>
 #include <limits>
@@ -102,11 +103,49 @@ TEST_CASE("a decimal number is read with or without its decimals") {
     }
 }
 
+TEST_CASE("a decimal number of up to 15 digits is the double nearest to it") {
+    struct Row {
+        std::string_view text;
+        double number;
+    };
+    const std::array rows{
+        Row{.text = "0.3", .number = 0.3},
+        Row{.text = "0.123456789012345", .number = 0.123456789012345},
+        Row{.text = "123456.789012345", .number = 123456.789012345},
+        Row{.text = "-999999999999999", .number = -999999999999999.0},
+        Row{.text = "0.000000000000000000001", .number = 1e-21},
+        Row{.text = "100000000000000000000000", .number = 1e23},
+        Row{.text = "2.5000000000000000000000000", .number = 2.5},
+    };
+    for (const Row& row : rows) {
+        CAPTURE(row.text);
+        const auto number = decimal_number(row.text, "--scale");
+        REQUIRE(number.has_value());
+        CHECK(*number == row.number);
+    }
+}
+
+TEST_CASE("a decimal number with more digits than a double holds is read closely") {
+    const auto pi = decimal_number("3.14159265358979323846264338327950288", "--scale");
+    REQUIRE(pi.has_value());
+    CHECK(*pi == doctest::Approx(3.14159265358979323846).epsilon(1e-15));
+    const auto tiny = decimal_number("0.000000000000000000000000000000123456789", "--scale");
+    REQUIRE(tiny.has_value());
+    CHECK(*tiny == doctest::Approx(1.23456789e-31).epsilon(1e-14));
+}
+
+TEST_CASE("minus zero is read as zero") {
+    const auto zero = decimal_number("-0.0", "--scale");
+    REQUIRE(zero.has_value());
+    CHECK(*zero == 0.0);
+    CHECK_FALSE(std::signbit(*zero));
+}
+
 TEST_CASE("text that is not all a decimal number is refused") {
     const std::string too_large(400, '9');
-    const std::array<std::string_view, 17> texts{
-        "",     " 1",  "1 ",   "+1", "1e3", "1E3", "0x1p3", "nan",     "inf",
-        "-inf", "1,5", "1..2", ".",  "-",   "1-",  "x",     too_large,
+    const std::array<std::string_view, 21> texts{
+        "",     " 1", "1 ", "+1", "1e3", "1E3",     "0x1p3", "nan", "inf",   "-inf", "1,5",
+        "1..2", ".",  "-",  "1-", "x",   too_large, "--1",   "-.",  "1.2.3", "1-2",
     };
     for (const std::string_view text : texts) {
         CAPTURE(text);

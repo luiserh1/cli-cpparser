@@ -35,7 +35,8 @@ struct DecimalRange {
 [[nodiscard]] std::expected<int, std::string>
 whole_number(std::string_view text, std::string_view option, WholeRange range = {});
 
-// "3", "3.0", "-0.25", ".5", "5.".
+// "3", "3.0", "-0.25", ".5", "5.". A number written with up to 15 digits is read as the
+// double nearest to it; a longer one, within a few units of its last place.
 //   "--scale takes a number from 0.1 to 10, and '0' is not one."
 [[nodiscard]] std::expected<double, std::string>
 decimal_number(std::string_view text, std::string_view option, DecimalRange range = {});

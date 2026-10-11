@@ -20,3 +20,7 @@ Policy: cpp-policy v0.33.5.
 - The example program's size budget on macOS is 164864 bytes (was 109568), approved by the
   owner: the old number was measured for the template's greeting program, which the example
   replaced. Linux and Windows follow once CI has measured them.
+- Decimal numbers are read by the library's own code and not by `std::from_chars`: macOS
+  has that function for a `double` only from version 26 on, and the first CI run could not
+  build the library on GitHub's macOS. A user of the library builds it on systems this
+  project never sees, so it uses nothing a system may lack.
