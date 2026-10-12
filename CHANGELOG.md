@@ -7,6 +7,10 @@ Policy: cpp-policy v0.33.5.
 
 ## Unreleased
 
+- The README says that exit code 2 is the library's on every command, and when the link to
+  the library is `PUBLIC`; `Form`'s comment says that a form with only its usage is the
+  usual case. ToneMatcher's adoption found each of them missing.
+
 ## 0.1.0 (2026-10-12)
 
 - Created with cpp-policy's `tools/new-project.sh`.

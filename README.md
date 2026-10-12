@@ -21,6 +21,8 @@ Licence: MIT.
   one, or any number.
 - A program exits with 0 when it did its work, with 1 when it could not, and with 2 when
   the command line is wrong.
+  Code 2 is the library's on every command: a program's own codes, if it has any, start
+  at 3.
 
 Every error is one message that names the option and says what to write:
 
@@ -94,6 +96,10 @@ cpp_policy_use_library(cli_cpparser
 target_link_libraries(app_core PRIVATE cli_cpparser::cli_cpparser)
 cpp_policy_confine_includes(cli_cpparser/ TO app)
 ```
+
+The link is `PUBLIC` when the target's own headers name the library's types
+(`cli_cpparser::Arguments` in a header that declares the runners), since its tests include
+them.
 
 It needs no package.
 

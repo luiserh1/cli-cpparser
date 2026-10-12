@@ -44,7 +44,8 @@ struct Form {
     // [--inputs DIR] [--work DIR]". The library adds nothing to it.
     std::string_view usage;
     // The same in short, as the program's help lists it: "zones --check". Empty: the form
-    // has no line of its own there.
+    // has no line of its own there, which is the usual case: a command whose forms differ
+    // only in their options is listed once, by its name and summary.
     std::string_view listed;
     std::string_view summary; // what this form does, beside `listed`
 };
