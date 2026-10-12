@@ -7,6 +7,8 @@ Policy: cpp-policy v0.33.5.
 
 ## Unreleased
 
+## 0.1.0 (2026-10-12)
+
 - Created with cpp-policy's `tools/new-project.sh`.
 - The library, in `lib/cli_cpparser/`: a command's table, `parse()`, typed readers of an
   option's value, help and usage written from the table, and a program's table of commands
