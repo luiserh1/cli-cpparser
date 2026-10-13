@@ -11,7 +11,7 @@ program printed in full (17 digits) is not refused and ToneMatcher can drop its 
 
 ### Scope
 
-- [ ] Upgrade to cpp-policy v0.36.0, when the owner says it is released. From v0.34.0 every
+- [x] Upgrade to cpp-policy v0.36.0, when the owner says it is released. From v0.34.0 every
       Mac build is for macOS 26.0, which has `std::from_chars` for a `double`; v0.33.5 built
       for the machine's own system, and GitHub's macOS 15 lacks it.
 - [ ] `decimal_number` and `as_decimal_number` read with `std::from_chars`, keeping the

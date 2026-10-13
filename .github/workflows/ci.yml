@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   gate:
-    uses: luiserh1/cpp-policy/.github/workflows/gate.yml@a49bbea5111428a2d2c59d186b2317af78e19089 # v0.33.5
+    uses: luiserh1/cpp-policy/.github/workflows/gate.yml@36027c545cc823218e92ef17ae73a024c8babcc3 # v0.36.0
     with:
       systems: '["linux", "windows", "macos"]'
       vcpkg: true
