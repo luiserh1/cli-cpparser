@@ -111,10 +111,15 @@ std::string choice_refusal(const Arguments& arguments, const Choice& choice) {
         }
     }
     if (given.size() > 1) {
-        return std::format("{} and {} are both given. Give one of them.", given[0], given[1]);
+        return choice.several.empty()
+                   ? std::format("{} and {} are both given. Give one of them.", given[0], given[1])
+                   : std::string{choice.several};
     }
     if (!given.empty() || !choice.required) {
         return {};
+    }
+    if (!choice.missing.empty()) {
+        return std::string{choice.missing};
     }
     if (among.size() == 2) {
         return std::format("Neither {} nor {} is given. Give one of them.", among[0], among[1]);
@@ -127,6 +132,9 @@ std::string needs_refusal(const Arguments& arguments, const Needs& rule,
                           std::span<const Option> options) {
     if (!has(arguments, rule.option) || has(arguments, rule.needs)) {
         return {};
+    }
+    if (!rule.message.empty()) {
+        return std::string{rule.message};
     }
     const auto needed = std::ranges::find(options, rule.needs, &Option::name);
     const std::string written =

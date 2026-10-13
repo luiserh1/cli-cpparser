@@ -33,7 +33,9 @@ inline constexpr std::size_t any_number = std::numeric_limits<std::size_t>::max(
 struct Words {
     std::size_t least{};
     std::size_t most{};
-    std::string_view name; // what the help and the messages call one of them: "FILE"
+    std::string_view name; // what the messages call one of them: "FILE"
+    // How the usage writes one, when that is not its name: "FILE|FOLDER". Empty: `name`.
+    std::string_view shown;
 };
 // Exactly one word, and any number of them, none included.
 [[nodiscard]] constexpr Words one_word(std::string_view name) {
@@ -62,14 +64,21 @@ struct Form {
 struct Choice {
     std::array<std::string_view, 6> among; // their names; the places left over stay empty
     bool required{};                       // one must be given; otherwise none may be
+    // What to say in place of those two sentences, as Option::missing is for a required
+    // option: when several are given, and when none is and one must be. Empty: the
+    // sentence above.
+    std::string_view several;
+    std::string_view missing;
 };
 
 // An option that is only given with another: "--zone" with "--piece".
 //   "--zone goes with --piece: give --piece N too, or leave --zone out."
-// Two options that go together are two of these, one each way.
+// Two options that go together are two of these, one each way; the usage written from the
+// table then has them in one pair of brackets: "[--tonematcher PROGRAM --result OUT]".
 struct Needs {
     std::string_view option;
     std::string_view needs;
+    std::string_view message; // what to say in place of that sentence; empty: the sentence
 };
 
 // An option as it was given.

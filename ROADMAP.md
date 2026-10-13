@@ -12,7 +12,7 @@ use `Choice` and `Needs`, and two commands keep a `Form` only for one usage line
 
 ### Scope
 
-- [ ] The program's own text on a rule between options, as `Option::missing` is for a
+- [x] The program's own text on a rule between options, as `Option::missing` is for a
       required option: `Needs::message`, and `Choice::several` and `Choice::missing`. Empty:
       the library's sentence. Seven of Alfar's rules are checks inside four commands.
 - [ ] Two options that each need the other are written in one pair of brackets in the usage

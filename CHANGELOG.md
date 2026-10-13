@@ -7,6 +7,13 @@ Policy: cpp-policy v0.36.0.
 
 ## Unreleased
 
+- A rule between options says the program's own words when it has them: `Needs::message`,
+  and `Choice::several` and `Choice::missing` (several of the choice given; none given and
+  one required), as `Option::missing` is for a required option. Empty, each keeps the
+  library's sentence. Alfar adopted 0.2.0 on the condition that no message a user reads
+  changes, and none of the library's sentences is Alfar's, so seven of its rules stayed
+  checks inside four commands. The example program grows by 396 bytes on macOS.
+
 ## 0.3.0 (2026-10-13)
 
 - A decimal number is read exactly whatever its length: `decimal_number` and

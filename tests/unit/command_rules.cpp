@@ -225,3 +225,47 @@ TEST_CASE("a missing word is asked for with the required options on both sides o
     CHECK(refusal(Words{"--as", "x", "--project", "p"}, imports, with_folders) ==
           "'alfar import' needs its FILE: write alfar import --as NAME FILE --project DIR.");
 }
+
+TEST_CASE("a rule between options is refused with the program's own words when it has them") {
+    static constexpr std::array options{Option{.name = "--all"},
+                                        Option{.name = "--piece", .value = "N"},
+                                        Option{.name = "--zone", .value = "Z"}};
+    static constexpr std::array choices{
+        Choice{.among = {"--piece", "--all"},
+               .required = true,
+               .several = "'alfar build' takes --piece or --all, not both.",
+               .missing = "Say what to fill: --piece N, or --all."}};
+    static constexpr std::array needs{
+        Needs{.option = "--zone",
+              .needs = "--piece",
+              .message = "--zone goes with --piece N: leave --zone out."}};
+    static constexpr Command fill{
+        .name = "build", .options = options, .choices = choices, .needs = needs};
+    const std::array rows{
+        Row{.what = "several of a choice",
+            .words = Words{"--all", "--piece", "1"},
+            .says = "'alfar build' takes --piece or --all, not both."},
+        Row{.what = "none of a choice",
+            .words = Words{},
+            .says = "Say what to fill: --piece N, or --all."},
+        Row{.what = "an option alone",
+            .words = Words{"--all", "--zone", "Front"},
+            .says = "--zone goes with --piece N: leave --zone out."},
+        Row{.what = "nothing wrong", .words = Words{"--piece=1", "--zone", "Front"}, .says = ""},
+    };
+    check_rows(rows, fill);
+}
+
+TEST_CASE("a choice with only one text of its own keeps the other sentence") {
+    static constexpr std::array options{Option{.name = "--auto"}, Option{.name = "--check"}};
+    static constexpr std::array choices{Choice{
+        .among = {"--auto", "--check"}, .required = true, .several = "Run it once for each."}};
+    static constexpr Command zones_alone{.name = "zones", .options = options, .choices = choices};
+    const std::array rows{
+        Row{.what = "both", .words = Words{"--auto", "--check"}, .says = "Run it once for each."},
+        Row{.what = "neither",
+            .words = Words{},
+            .says = "Neither --auto nor --check is given. Give one of them."},
+    };
+    check_rows(rows, zones_alone);
+}
