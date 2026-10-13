@@ -1,25 +1,48 @@
 #include "cli_cpparser/command/usage.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <format>
+#include <span>
+#include <string_view>
+#include <vector>
 
 namespace cli_cpparser {
 
 namespace {
 
+// Whether each of two options is only given with the other.
+bool go_together(std::string_view one, std::string_view other, std::span<const Needs> needs) {
+    const auto tied = [needs](std::string_view option, std::string_view to) {
+        return std::ranges::any_of(needs, [option, to](const Needs& rule) {
+            return rule.option == option && rule.needs == to;
+        });
+    };
+    return tied(one, other) && tied(other, one);
+}
+
 // The options as a usage line has them, each after a space: the required ones, then the
-// others in brackets.
-std::string options_part(std::span<const Option> options) {
+// others in brackets. Those that go with one before them are in its brackets.
+std::string options_part(std::span<const Option> options, std::span<const Needs> needs = {}) {
     std::string text;
     for (const Option& option : options) {
         if (option.required) {
             text += std::format(" {}", spelled(option));
         }
     }
+    std::vector<std::string_view> written;
     for (const Option& option : options) {
-        if (!option.required) {
-            text += std::format(" [{}]", spelled(option));
+        if (option.required || std::ranges::contains(written, option.name)) {
+            continue;
         }
+        text += std::format(" [{}", spelled(option));
+        for (const Option& other : options) {
+            if (!other.required && go_together(option.name, other.name, needs)) {
+                text += std::format(" {}", spelled(other));
+                written.push_back(other.name);
+            }
+        }
+        text += ']';
     }
     return text;
 }
@@ -64,7 +87,8 @@ std::string usage_text(const Command& command, const Program& program) {
     const std::string shared = options_part(program.shared);
     if (command.forms.empty()) {
         return std::format("usage: {}{}{}{}\n", invocation(command, program),
-                           options_part(command.options), words_part(command.words), shared);
+                           options_part(command.options, command.needs), words_part(command.words),
+                           shared);
     }
     std::string text;
     for (const Form& form : command.forms) {

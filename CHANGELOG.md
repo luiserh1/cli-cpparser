@@ -13,6 +13,13 @@ Policy: cpp-policy v0.36.0.
   library's sentence. Alfar adopted 0.2.0 on the condition that no message a user reads
   changes, and none of the library's sentences is Alfar's, so seven of its rules stayed
   checks inside four commands. The example program grows by 396 bytes on macOS.
+- **Changed, in what a program prints:** two options that each need the other (two `Needs`,
+  one each way) share one pair of brackets in the usage written from the table:
+  `[--tonematcher PROGRAM --result OUT]`, where it wrote `[--tonematcher PROGRAM]
+  [--result OUT]`. The second is written beside the first, wherever the table has it. Both
+  must be the command's own and not required. The usage says what the parser enforces;
+  Alfar's `export` kept a `Form` only to write that line. A command with such a pair and
+  no `Form` prints a different usage line from 0.3.0. The example grows by 1,417 bytes.
 
 ## 0.3.0 (2026-10-13)
 

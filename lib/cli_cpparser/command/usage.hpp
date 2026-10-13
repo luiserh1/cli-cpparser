@@ -25,8 +25,10 @@ namespace cli_cpparser {
 //
 // A command without forms has one, written from its table: its required options, the others
 // in brackets, its words ("FILE" for one, "[FILE..]" for any number), and the shared ones.
+// Two of its own options that each need the other (Needs) share their brackets, the second
+// beside the first.
 //
-//   usage: alfar export --out DIR [--allow-blank] --project DIR [--work DIR]
+//   usage: alfar export --out DIR [--allow-blank] [--with PROGRAM --result OUT] --project DIR
 [[nodiscard]] std::string usage_text(const Command& command, const Program& program);
 
 } // namespace cli_cpparser
