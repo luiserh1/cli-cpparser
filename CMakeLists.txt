@@ -11,7 +11,7 @@ project(CliCpparser VERSION 0.4.0 LANGUAGES CXX)
 include(FetchContent)
 FetchContent_Declare(cpp_policy
     GIT_REPOSITORY https://github.com/luiserh1/cpp-policy.git
-    GIT_TAG        1f48e6634bd5b0b7643d7cbb39e556decc582030) # v0.37.0
+    GIT_TAG        d8e7b455c05d5c6db586c89bc663868312e730f1) # v0.38.0
 FetchContent_MakeAvailable(cpp_policy)
 
 # The library (POLICY.md 11.7): lib/cli_cpparser/, declared in the file its users include too.
