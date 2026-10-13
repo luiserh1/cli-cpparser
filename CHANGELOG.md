@@ -56,9 +56,12 @@ marked **changed** breaks them.
   270,000 bytes.
 - The README says that exit code 2 is the library's on every command, and when the link to
   the library is `PUBLIC`. ToneMatcher's adoption found each of them missing.
-- The example program's size budget on macOS is 182272 bytes (was 164864), approved by the
-  owner: the program is 173312 bytes, 17216 more than at 0.1.0, for the changes above. Linux
-  and Windows follow once CI has measured them.
+- The example program's size budgets are 182272 bytes on macOS (was 164864), 184320 on
+  Linux (was 166912) and 371712 on Windows (was 348160), approved by the owner. Each is the
+  size measured in CI (173312, 174784 and 353792) plus 5%. The program grew by 17216, 16384
+  and 22528 bytes for the changes above. By a link map of the macOS build, about half of
+  the program is the library and half the example's own code, most of that the standard
+  library's printing of decimal numbers, which the library does not use.
 
 ## 0.1.0 (2026-10-12)
 

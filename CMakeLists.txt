@@ -32,7 +32,7 @@ target_link_libraries(cli_cpparser PRIVATE cli_cpparser_core)
 cpp_policy_apply(cli_cpparser)
 # The most the program may weigh, stripped, on each system: its size plus 5% (cpp-policy
 # POLICY.md 13.5). The release workflow checks it; the owner approves raising a budget.
-cpp_policy_size_budget(cli_cpparser MACOS 182272 LINUX 166912 WINDOWS 348160)
+cpp_policy_size_budget(cli_cpparser MACOS 182272 LINUX 184320 WINDOWS 371712)
 
 enable_testing()
 add_subdirectory(tests)
