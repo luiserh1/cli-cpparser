@@ -158,7 +158,7 @@ with a body that says why); `pre-push` runs the full gate. After editing C++
 files, `sh tools/hooks/tidy-files <file>...` checks just those files.
 
 This project follows [cpp-policy](https://github.com/luiserh1/cpp-policy),
-pinned in `CMakeLists.txt` (v0.37.0). `.clang-tidy`, `.clang-format`,
+pinned in `CMakeLists.txt` (v0.39.0). `.clang-tidy`, `.clang-format`,
 `CMakePresets.json` and `tools/hooks/` are its copies and must not be edited
 here; upgrade with its `tools/upgrade.sh`.
 
