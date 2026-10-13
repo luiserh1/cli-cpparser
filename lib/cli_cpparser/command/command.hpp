@@ -156,7 +156,8 @@ joined(const std::array<Option, Sizes>&... lists) {
 }
 
 // Whether an option was given, and its value (nothing when it was not; empty for a flag).
-// The value lives as long as `arguments`.
+// The value lives as long as `arguments`. It is a view: where a string is wanted, as by a
+// file's stream on Linux, make a std::string or a std::filesystem::path of it.
 [[nodiscard]] bool has(const Arguments& arguments, std::string_view name);
 [[nodiscard]] std::optional<std::string_view> value_of(const Arguments& arguments,
                                                        std::string_view name);

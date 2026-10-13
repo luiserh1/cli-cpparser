@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.29)
 # files in tools/vcpkg/: they build the dependencies like the project (cpp-policy POLICY.md 1.1).
 include("${CMAKE_CURRENT_SOURCE_DIR}/tools/vcpkg/setup.cmake")
 
-project(CliCpparser VERSION 0.3.0 LANGUAGES CXX)
+project(CliCpparser VERSION 0.4.0 LANGUAGES CXX)
 
 # cpp-policy, pinned by commit (POLICY.md 10). Upgrade with its tools/upgrade.sh, which moves
 # this pin and the one in .github/workflows/ci.yml together.

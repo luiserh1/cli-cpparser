@@ -3,9 +3,14 @@
 Each entry says what changed and why. The version is defined once, in
 `project()` in `CMakeLists.txt`; each release is an annotated tag `v<version>`.
 
-Policy: cpp-policy v0.36.0.
+Policy: cpp-policy v0.37.0.
 
 ## Unreleased
+
+## 0.4.0 (2026-10-13)
+
+What Alfar's adoption of 0.2.0 asked for. A user of 0.3.0 changes nothing in its tables or
+calls; one item changes what a program may print.
 
 - A rule between options says the program's own words when it has them: `Needs::message`,
   and `Choice::several` and `Choice::missing` (several of the choice given; none given and
@@ -26,6 +31,9 @@ Policy: cpp-policy v0.36.0.
 - The usage is written without `std::format`. With the three changes above the example
   was 512 bytes over its size budget on Windows; written so, its code is smaller than
   0.3.0's on macOS (138,030 bytes of sections against 139,647).
+- The header says that a value is a view, and that a file's stream wants a string or a path
+  made of it: `std::ofstream::open` takes a `std::string_view` with libc++ and not with
+  libstdc++, so ToneMatcher's use of one passed on the Mac and failed on Linux.
 
 ## 0.3.0 (2026-10-13)
 

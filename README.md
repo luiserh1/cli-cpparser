@@ -110,7 +110,7 @@ In the project that uses it (`<commit>` is a release's commit; see `CHANGELOG.md
 ```cmake
 cpp_policy_use_library(cli_cpparser
     GIT_REPOSITORY https://github.com/luiserh1/cli-cpparser.git
-    GIT_TAG        <commit>)   # v0.3.0
+    GIT_TAG        <commit>)   # v0.4.0
 target_link_libraries(app_core PRIVATE cli_cpparser::cli_cpparser)
 cpp_policy_confine_includes(cli_cpparser/ TO app)
 ```
@@ -158,7 +158,7 @@ with a body that says why); `pre-push` runs the full gate. After editing C++
 files, `sh tools/hooks/tidy-files <file>...` checks just those files.
 
 This project follows [cpp-policy](https://github.com/luiserh1/cpp-policy),
-pinned in `CMakeLists.txt` (v0.36.0). `.clang-tidy`, `.clang-format`,
+pinned in `CMakeLists.txt` (v0.37.0). `.clang-tidy`, `.clang-format`,
 `CMakePresets.json` and `tools/hooks/` are its copies and must not be edited
 here; upgrade with its `tools/upgrade.sh`.
 
