@@ -126,7 +126,8 @@ sh tools/hooks/gate tsan
 `sh tools/hooks/gate` runs `cmake --workflow --preset check` (`win-check` on Windows), one gate
 at a time on the machine, and ends with `gate: passed` or `gate: FAILED`.
 Read that line, or the command's own exit code: don't chain other commands
-after it and read theirs.
+after it and read theirs. A workflow that failed is remembered until it
+passes again in this folder, and `git push` is refused meanwhile.
 
 Formatting problems: `sh tools/hooks/tidy-files --format <file>...` (or every
 file: `cmake --build --preset check --target policy-format-fix`).
