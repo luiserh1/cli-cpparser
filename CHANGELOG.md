@@ -7,6 +7,8 @@ Policy: cpp-policy v0.33.5.
 
 ## Unreleased
 
+## 0.2.0 (2026-10-13)
+
 What Alfar's and ToneMatcher's adoption of 0.1.0 asked for. Both adopted it without
 patching it; each kept code of its own for something the table could not say, and that is
 what these changes take in. A user of 0.1.0 has to change its tables and calls: every item

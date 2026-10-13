@@ -110,7 +110,7 @@ In the project that uses it (`<commit>` is a release's commit; see `CHANGELOG.md
 ```cmake
 cpp_policy_use_library(cli_cpparser
     GIT_REPOSITORY https://github.com/luiserh1/cli-cpparser.git
-    GIT_TAG        <commit>)   # v0.1.0
+    GIT_TAG        <commit>)   # v0.2.0
 target_link_libraries(app_core PRIVATE cli_cpparser::cli_cpparser)
 cpp_policy_confine_includes(cli_cpparser/ TO app)
 ```
