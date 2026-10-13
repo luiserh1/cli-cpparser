@@ -52,15 +52,16 @@ std::string words_part(const Words& words) {
     // A usage line names each word up to a few; a command that takes more says so in its
     // forms.
     constexpr std::size_t most_named = 4;
+    const std::string_view name = words.shown.empty() ? words.name : words.shown;
     std::string text;
     for (std::size_t at = 0; at < words.least && at < most_named; ++at) {
-        text += std::format(" {}", words.name);
+        text += std::format(" {}", name);
     }
     if (words.most == any_number) {
-        return text + std::format(" [{}..]", words.name);
+        return text + std::format(" [{}..]", name);
     }
     for (std::size_t at = words.least; at < words.most && at < most_named; ++at) {
-        text += std::format(" [{}]", words.name);
+        text += std::format(" [{}]", name);
     }
     return text;
 }

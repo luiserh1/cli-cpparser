@@ -7,7 +7,8 @@
 #include <array>
 #include <string_view>
 
-// The usage written from a table whose options have rules between them.
+// The usage written from a table whose options have rules between them, or whose words
+// are shown by another name.
 namespace {
 
 using namespace tables;
@@ -62,4 +63,17 @@ TEST_CASE("three options that all need each other share one pair of brackets in 
     };
     CHECK(usage_with(needs) ==
           "usage: alfar export --out DIR [--with PROGRAM --allow-blank --result OUT]\n");
+}
+
+TEST_CASE("a word is written in the usage as it is shown and called by its name elsewhere") {
+    static constexpr Command imports{
+        .name = "import", .words = {.least = 1, .most = 1, .name = "FILE", .shown = "FILE|FOLDER"}};
+    CHECK(cli_cpparser::usage_text(imports, with_folders) ==
+          "usage: alfar import FILE|FOLDER --project DIR [--work DIR]\n");
+    CHECK(refusal(Words{"--project", "p"}, imports, with_folders) ==
+          "'alfar import' needs its FILE: write alfar import FILE --project DIR.");
+    static constexpr Command add{
+        .name = "add",
+        .words = {.least = 1, .most = cli_cpparser::any_number, .name = "FILE", .shown = "PATH"}};
+    CHECK(cli_cpparser::usage_text(add, program) == "usage: alfar add PATH [PATH..]\n");
 }

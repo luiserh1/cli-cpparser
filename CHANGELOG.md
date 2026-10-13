@@ -20,6 +20,10 @@ Policy: cpp-policy v0.36.0.
   must be the command's own and not required. The usage says what the parser enforces;
   Alfar's `export` kept a `Form` only to write that line. A command with such a pair and
   no `Form` prints a different usage line from 0.3.0. The example grows by 1,417 bytes.
+- `Words::shown`: how the usage writes a word, when that is not what the messages call it
+  (`FILE|FOLDER` in the usage, "needs its FILE" in the message). Empty, it is
+  `Words::name`, as before. Alfar's `import` kept a `Form` only for that line. The example
+  does not grow.
 
 ## 0.3.0 (2026-10-13)
 

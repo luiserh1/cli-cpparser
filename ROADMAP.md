@@ -18,7 +18,7 @@ use `Choice` and `Needs`, and two commands keep a `Form` only for one usage line
 - [x] Two options that each need the other are written in one pair of brackets in the usage
       written from the table: `[--tonematcher PROGRAM --result OUT]`. The second is written
       beside the first. Alfar's `export` keeps a `Form` for that line.
-- [ ] `Words::shown`: how the usage writes a word, when the messages call it otherwise
+- [x] `Words::shown`: how the usage writes a word, when the messages call it otherwise
       (`FILE|FOLDER` beside `FILE`). Empty: `Words::name`. Alfar's `import` keeps a `Form`
       for that line.
 
