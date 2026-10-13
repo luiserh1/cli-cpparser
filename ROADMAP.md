@@ -4,6 +4,29 @@ Open work on cli-cpparser: what comes next, and why. Finished work goes to
 `CHANGELOG.md`, with its reason, in the commit that finishes it. The layout
 follows cpp-policy's POLICY.md, section 11.5.
 
+## 0.3.0 (in progress)
+
+**Goal:** a decimal number is read exactly whatever its length, so that a number another
+program printed in full (17 digits) is not refused and ToneMatcher can drop its own reader.
+
+### Scope
+
+- [ ] Upgrade to cpp-policy v0.36.0, when the owner says it is released. From v0.34.0 every
+      Mac build is for macOS 26.0, which has `std::from_chars` for a `double`; v0.33.5 built
+      for the machine's own system, and GitHub's macOS 15 lacks it.
+- [ ] `decimal_number` and `as_decimal_number` read with `std::from_chars`, keeping the
+      strict check of what a number is written with. The limit of 15 digits and the
+      constant `most_decimal_digits` go.
+
+### Out of scope
+
+- Any other change to the interface: 0.2.0 was its one change from adoption.
+
+### Validation
+
+- [ ] The gate passes in CI on every system in `.github/workflows/ci.yml`.
+- [ ] The release commit is tagged `v0.3.0` once its run is green.
+
 ## Later
 
 - [ ] A reader of whole numbers larger than `int` (`std::int64_t`), when a program has an
