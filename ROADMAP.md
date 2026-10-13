@@ -14,7 +14,7 @@ program printed in full (17 digits) is not refused and ToneMatcher can drop its 
 - [x] Upgrade to cpp-policy v0.36.0, when the owner says it is released. From v0.34.0 every
       Mac build is for macOS 26.0, which has `std::from_chars` for a `double`; v0.33.5 built
       for the machine's own system, and GitHub's macOS 15 lacks it.
-- [ ] `decimal_number` and `as_decimal_number` read with `std::from_chars`, keeping the
+- [x] `decimal_number` and `as_decimal_number` read with `std::from_chars`, keeping the
       strict check of what a number is written with. The limit of 15 digits and the
       constant `most_decimal_digits` go.
 
@@ -46,8 +46,5 @@ program printed in full (17 digits) is not refused and ToneMatcher can drop its 
 - Rules between options beyond the two the table has (one of several; one only with
   another): no nesting and no conditions. A command checks anything else and returns the
   message.
-- A decimal number of more than 15 digits: reading it exactly at any length is several
-  hundred lines for input nobody types, and reading it nearly is what 0.1.0 did and
-  ToneMatcher could not use.
 - Wrapping the help to the terminal's width: the width is the operating system's to say,
   and the library has no such code. A program breaks its long lines by hand.

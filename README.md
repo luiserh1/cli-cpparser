@@ -21,8 +21,8 @@ Licence: MIT.
   two or three, any number.
 - A table can say two rules between options: that one of several is given and no more
   (`--auto` or `--check`), and that one goes only with another (`--zone` with `--piece`).
-- A number is read strictly: the whole text is the number or it is refused, and a decimal
-  number has at most 15 digits, so that what is read is exactly what was written.
+- A number is read strictly: the whole text is the number or it is refused, and what is
+  read is the number nearest to what was written, the same on every system.
 - A program exits with 0 when it did its work, with 1 when it could not, and with 2 when
   the command line is wrong.
   Code 2 is the library's on every command: a program's own codes, if it has any, start

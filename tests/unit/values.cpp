@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <format>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -103,66 +104,37 @@ TEST_CASE("a decimal number is read with or without its decimals") {
     }
 }
 
-TEST_CASE("a decimal number of up to 15 digits is the double nearest to it") {
+TEST_CASE("a decimal number is the double nearest to it however many digits it has") {
     struct Row {
         std::string_view text;
         double number;
     };
     const std::array rows{
         Row{.text = "0.3", .number = 0.3},
-        Row{.text = "0.123456789012345", .number = 0.123456789012345},
         Row{.text = "123456.789012345", .number = 123456.789012345},
         Row{.text = "-999999999999999", .number = -999999999999999.0},
-        Row{.text = "0.000000000000001", .number = 1e-15},
-        Row{.text = "7.38905609893065", .number = 7.38905609893065},
-    };
-    for (const Row& row : rows) {
-        CAPTURE(row.text);
-        const auto number = decimal_number(row.text, "--scale");
-        REQUIRE(number.has_value());
-        CHECK(*number == row.number);
-    }
-}
-
-TEST_CASE("zeros before a decimal number and after its decimals are not counted as digits") {
-    struct Row {
-        std::string_view text;
-        double number;
-    };
-    const std::array rows{
+        // As another program prints a double in full: 17 digits.
+        Row{.text = "0.30000000000000004", .number = 0.1 + 0.2},
+        Row{.text = "3.141592653589793238462643383279502884", .number = std::numbers::pi},
+        Row{.text = "0.000000000000000000001", .number = 1e-21},
+        Row{.text = "100000000000000000000000", .number = 1e23},
         Row{.text = "2.5000000000000000000000000", .number = 2.5},
         Row{.text = "00000000000000000000042", .number = 42.0},
-        Row{.text = "0000000000.123456789012345000000", .number = 0.123456789012345},
-        Row{.text = "0.00000000000000000000", .number = 0.0},
     };
     for (const Row& row : rows) {
         CAPTURE(row.text);
         const auto number = decimal_number(row.text, "--scale");
         REQUIRE(number.has_value());
         CHECK(*number == row.number);
+        CHECK(cli_cpparser::as_decimal_number(row.text) == row.number);
     }
 }
 
-TEST_CASE("a decimal number of more than 15 digits is refused with how many it has") {
-    // It could only be read nearly, and what is read here is exact or refused.
-    struct Row {
-        std::string_view text;
-        int digits;
-    };
-    const std::array rows{
-        Row{.text = "3.14159265358979323846", .digits = 21},
-        Row{.text = "1234567890123456", .digits = 16},
-        Row{.text = "-0.1234567890123456", .digits = 16},
-        Row{.text = "0.0000000000000001", .digits = 16},
-        Row{.text = "1000000000000000", .digits = 16},
-    };
-    for (const Row& row : rows) {
-        CAPTURE(row.text);
-        CHECK(refusal(decimal_number(row.text, "--scale", {.least = 0, .most = 1})) ==
-              std::format("--scale takes a number of at most 15 digits, and '{}' has {}.", row.text,
-                          row.digits));
-        CHECK_FALSE(cli_cpparser::as_decimal_number(row.text).has_value());
-    }
+TEST_CASE("a number too large for a double is refused") {
+    const std::string too_large(400, '9');
+    CHECK(refusal(decimal_number(too_large, "--scale")) ==
+          std::format("--scale takes a number, and '{}' is not one.", too_large));
+    CHECK_FALSE(cli_cpparser::as_decimal_number(too_large).has_value());
 }
 
 TEST_CASE("minus zero is read as zero") {

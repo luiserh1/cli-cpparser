@@ -7,6 +7,14 @@ Policy: cpp-policy v0.36.0.
 
 ## Unreleased
 
+- A decimal number is read exactly whatever its length: `decimal_number` and
+  `as_decimal_number` use `std::from_chars` again, and the limit of 15 digits that 0.2.0
+  set is gone, with its message and the constant `most_decimal_digits`. A number another
+  program printed in full has 17 digits (`0.30000000000000004`) and was refused, and
+  ToneMatcher kept its own reader for it. 0.1.0 left `std::from_chars` because GitHub's
+  macOS lacked it for a `double`; from cpp-policy v0.34.0 every Mac build is for macOS
+  26.0, which has it. A project that uses the library needs that release or a later one.
+
 ## 0.2.0 (2026-10-13)
 
 What Alfar's and ToneMatcher's adoption of 0.1.0 asked for. Both adopted it without

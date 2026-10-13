@@ -29,11 +29,6 @@ struct DecimalRange {
     double most{std::numeric_limits<double>::max()};
 };
 
-// The most digits a decimal number may be written with, not counting zeros before it or
-// after its decimals: as many as a double holds whatever they are. So every number read is
-// the double nearest to what was written, the same on every system.
-inline constexpr std::size_t most_decimal_digits = 15;
-
 // "23", "023", "-4".
 //   "--piece takes a whole number, 1 or more, and 'x' is not one."
 //   "--size takes a whole number from 16 to 4096, and '8' is not one."
@@ -41,14 +36,14 @@ inline constexpr std::size_t most_decimal_digits = 15;
 [[nodiscard]] std::expected<int, std::string>
 whole_number(std::string_view text, std::string_view option, WholeRange range = {});
 
-// "3", "3.0", "-0.25", ".5", "5.", "007.500".
+// "3", "3.0", "-0.25", ".5", "5.", "007.500". The number read is the double nearest to what
+// was written, however many digits that is.
 //   "--scale takes a number from 0.1 to 10, and '0' is not one."
-//   "--scale takes a number of at most 15 digits, and '3.14159265358979323' has 18."
 [[nodiscard]] std::expected<double, std::string>
 decimal_number(std::string_view text, std::string_view option, DecimalRange range = {});
 
 // The same two without a message, for a command that writes its own: the number, or nothing
-// for text that is none (or, for a decimal number, that has too many digits).
+// for text that is none.
 [[nodiscard]] std::optional<int> as_whole_number(std::string_view text);
 [[nodiscard]] std::optional<double> as_decimal_number(std::string_view text);
 
