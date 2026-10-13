@@ -1,6 +1,5 @@
 #include "cli_cpparser/command/usage.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <format>
 #include <span>
@@ -13,12 +12,13 @@ namespace {
 
 // Whether each of two options is only given with the other.
 bool go_together(std::string_view one, std::string_view other, std::span<const Needs> needs) {
-    const auto tied = [needs](std::string_view option, std::string_view to) {
-        return std::ranges::any_of(needs, [option, to](const Needs& rule) {
-            return rule.option == option && rule.needs == to;
-        });
-    };
-    return tied(one, other) && tied(other, one);
+    bool one_way = false;
+    bool other_way = false;
+    for (const Needs& rule : needs) {
+        one_way = one_way || (rule.option == one && rule.needs == other);
+        other_way = other_way || (rule.option == other && rule.needs == one);
+    }
+    return one_way && other_way;
 }
 
 // The options as a usage line has them, each after a space: the required ones, then the
@@ -27,19 +27,20 @@ std::string options_part(std::span<const Option> options, std::span<const Needs>
     std::string text;
     for (const Option& option : options) {
         if (option.required) {
-            text += std::format(" {}", spelled(option));
+            text += ' ' + spelled(option);
         }
     }
-    std::vector<std::string_view> written;
-    for (const Option& option : options) {
-        if (option.required || std::ranges::contains(written, option.name)) {
+    std::vector<bool> written(options.size());
+    for (std::size_t at = 0; at < options.size(); ++at) {
+        if (options[at].required || written[at]) {
             continue;
         }
-        text += std::format(" [{}", spelled(option));
-        for (const Option& other : options) {
-            if (!other.required && go_together(option.name, other.name, needs)) {
-                text += std::format(" {}", spelled(other));
-                written.push_back(other.name);
+        text += " [" + spelled(options[at]);
+        for (std::size_t next = at + 1; next < options.size(); ++next) {
+            if (!options[next].required && !written[next] &&
+                go_together(options[at].name, options[next].name, needs)) {
+                text += ' ' + spelled(options[next]);
+                written[next] = true;
             }
         }
         text += ']';
@@ -55,13 +56,13 @@ std::string words_part(const Words& words) {
     const std::string_view name = words.shown.empty() ? words.name : words.shown;
     std::string text;
     for (std::size_t at = 0; at < words.least && at < most_named; ++at) {
-        text += std::format(" {}", name);
+        text.append(" ").append(name);
     }
     if (words.most == any_number) {
-        return text + std::format(" [{}..]", name);
+        return text.append(" [").append(name).append("..]");
     }
     for (std::size_t at = words.least; at < words.most && at < most_named; ++at) {
-        text += std::format(" [{}]", name);
+        text.append(" [").append(name).append("]");
     }
     return text;
 }

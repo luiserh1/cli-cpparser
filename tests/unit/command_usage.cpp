@@ -65,6 +65,17 @@ TEST_CASE("three options that all need each other share one pair of brackets in 
           "usage: alfar export --out DIR [--with PROGRAM --allow-blank --result OUT]\n");
 }
 
+TEST_CASE("an option that goes with two others that do not go together is written once") {
+    static constexpr std::array needs{
+        Needs{.option = "--with", .needs = "--result"},
+        Needs{.option = "--result", .needs = "--with"},
+        Needs{.option = "--result", .needs = "--allow-blank"},
+        Needs{.option = "--allow-blank", .needs = "--result"},
+    };
+    CHECK(usage_with(needs) ==
+          "usage: alfar export --out DIR [--with PROGRAM --result OUT] [--allow-blank]\n");
+}
+
 TEST_CASE("a word is written in the usage as it is shown and called by its name elsewhere") {
     static constexpr Command imports{
         .name = "import", .words = {.least = 1, .most = 1, .name = "FILE", .shown = "FILE|FOLDER"}};

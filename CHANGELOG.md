@@ -12,18 +12,20 @@ Policy: cpp-policy v0.36.0.
   one required), as `Option::missing` is for a required option. Empty, each keeps the
   library's sentence. Alfar adopted 0.2.0 on the condition that no message a user reads
   changes, and none of the library's sentences is Alfar's, so seven of its rules stayed
-  checks inside four commands. The example program grows by 396 bytes on macOS.
+  checks inside four commands.
 - **Changed, in what a program prints:** two options that each need the other (two `Needs`,
   one each way) share one pair of brackets in the usage written from the table:
   `[--tonematcher PROGRAM --result OUT]`, where it wrote `[--tonematcher PROGRAM]
   [--result OUT]`. The second is written beside the first, wherever the table has it. Both
   must be the command's own and not required. The usage says what the parser enforces;
   Alfar's `export` kept a `Form` only to write that line. A command with such a pair and
-  no `Form` prints a different usage line from 0.3.0. The example grows by 1,417 bytes.
+  no `Form` prints a different usage line from 0.3.0.
 - `Words::shown`: how the usage writes a word, when that is not what the messages call it
   (`FILE|FOLDER` in the usage, "needs its FILE" in the message). Empty, it is
-  `Words::name`, as before. Alfar's `import` kept a `Form` only for that line. The example
-  does not grow.
+  `Words::name`, as before. Alfar's `import` kept a `Form` only for that line.
+- The usage is written without `std::format`. With the three changes above the example
+  was 512 bytes over its size budget on Windows; written so, its code is smaller than
+  0.3.0's on macOS (138,030 bytes of sections against 139,647).
 
 ## 0.3.0 (2026-10-13)
 
