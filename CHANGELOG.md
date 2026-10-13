@@ -7,6 +7,8 @@ Policy: cpp-policy v0.36.0.
 
 ## Unreleased
 
+## 0.3.0 (2026-10-13)
+
 - A decimal number is read exactly whatever its length: `decimal_number` and
   `as_decimal_number` use `std::from_chars` again, and the limit of 15 digits that 0.2.0
   set is gone, with its message and the constant `most_decimal_digits`. A number another
