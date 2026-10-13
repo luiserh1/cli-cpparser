@@ -9,6 +9,7 @@ cpp_policy_library(cli_cpparser
     LAYER program
     SOURCES
         command/command.cpp
+        command/internal/checks.cpp
         command/parse.cpp
         command/usage.cpp
         values/readers.cpp

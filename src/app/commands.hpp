@@ -10,7 +10,7 @@
 // what they accept are in run.cpp.
 namespace app {
 
-// "repeat WORD --times N [--separator TEXT]": the word, N times.
+// "repeat WORD --times N [--separator TEXT [--final TEXT]]": the word, N times.
 std::expected<int, std::string> run_repeat(const cli_cpparser::Arguments& arguments,
                                            std::ostream& out, std::ostream& err);
 

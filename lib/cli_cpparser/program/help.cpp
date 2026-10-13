@@ -1,3 +1,4 @@
+#include "cli_cpparser/command/usage.hpp"
 #include "cli_cpparser/program/program.hpp"
 
 #include <algorithm>
@@ -16,9 +17,9 @@ struct Row {
     std::string_view meaning;
 };
 
-// The rows in two columns, two spaces in. A name too long for the first column has its
-// meaning on a line of its own, so that one long name doesn't push every meaning away.
-std::string columns(std::span<const Row> rows) {
+// The width of the first column for these rows: the longest name that isn't too long for a
+// column, so that one long name doesn't push every meaning away.
+std::size_t column_width(std::span<const Row> rows) {
     constexpr std::size_t widest_column = 24;
     std::size_t width = 0;
     for (const Row& row : rows) {
@@ -26,6 +27,12 @@ std::string columns(std::span<const Row> rows) {
             width = std::max(width, row.name.size());
         }
     }
+    return width;
+}
+
+// The rows in two columns, two spaces in. A name longer than the first column has its
+// meaning on a line of its own.
+std::string columns(std::span<const Row> rows, std::size_t width) {
     std::string text;
     for (const Row& row : rows) {
         if (row.meaning.empty()) {
@@ -39,32 +46,61 @@ std::string columns(std::span<const Row> rows) {
     return text;
 }
 
-// A command's lines in the program's help: one for each form that is listed, or one with
-// its name.
-void add_rows(std::vector<Row>& rows, const Command& command) {
-    const std::size_t before = rows.size();
+// The forms of a command that have a line of their own in the program's help.
+std::vector<Row> listed_forms(const Command& command) {
+    std::vector<Row> rows;
     for (const Form& form : command.forms) {
         if (!form.listed.empty()) {
             rows.push_back(Row{.name = std::string{form.listed}, .meaning = form.summary});
         }
     }
-    if (rows.size() == before) {
-        rows.push_back(Row{.name = std::string{command.name}, .meaning = command.summary});
+    return rows;
+}
+
+std::vector<Row> rows_of(std::span<const Option> options) {
+    std::vector<Row> rows;
+    rows.reserve(options.size());
+    for (const Option& option : options) {
+        rows.push_back(Row{.name = spelled(option), .meaning = option.help});
     }
+    return rows;
+}
+
+// The program's commands as the rows of its help.
+std::vector<Row> rows_of(const Program& program) {
+    std::vector<Row> rows;
+    for (const Command& command : program.commands) {
+        std::vector<Row> forms = listed_forms(command);
+        if (forms.empty()) {
+            const std::string_view listed = command.listed.empty() ? command.name : command.listed;
+            forms.push_back(Row{.name = std::string{listed}, .meaning = command.summary});
+        }
+        rows.insert(rows.end(), forms.begin(), forms.end());
+    }
+    rows.push_back(Row{.name = "help", .meaning = "Show this list"});
+    rows.push_back(Row{.name = "--version", .meaning = "Print the program's version"});
+    return rows;
 }
 
 } // namespace
 
 std::string help_text(const Program& program) {
-    std::vector<Row> rows;
-    for (const Command& command : program.commands) {
-        add_rows(rows, command);
+    const std::vector<Row> commands = rows_of(program);
+    const std::vector<Row> shared = rows_of(program.shared);
+    // One column for both lists, so that they line up.
+    const std::size_t width = std::max(column_width(commands), column_width(shared));
+    std::string required;
+    for (const Option& option : program.shared) {
+        if (option.required) {
+            required += std::format(" {}", spelled(option));
+        }
     }
-    rows.push_back(Row{.name = "help", .meaning = "Show this list"});
-    rows.push_back(Row{.name = "--version", .meaning = "Print the program's version"});
     std::string text = std::format("{} {}: {}\n\n", program.name, program.version, program.summary);
-    text += std::format("Usage: {} <command> [options]\n\n", program.name);
-    text += std::format("Commands:\n{}\n", columns(rows));
+    text += std::format("Usage: {} <command>{} [options]\n\n", program.name, required);
+    text += std::format("Commands:\n{}\n", columns(commands, width));
+    if (!shared.empty()) {
+        text += std::format("Every command takes:\n{}\n", columns(shared, width));
+    }
     if (!program.notes.empty()) {
         text += std::format("{}\n\n", program.notes);
     }
@@ -72,18 +108,17 @@ std::string help_text(const Program& program) {
     return text;
 }
 
-std::string help_text(const Command& command, std::string_view program) {
+std::string help_text(const Command& command, const Program& program) {
     std::string text = usage_text(command, program);
     const std::string_view about = command.details.empty() ? command.summary : command.details;
     if (!about.empty()) {
         text += std::format("\n{}\n", about);
+    } else if (const std::vector<Row> forms = listed_forms(command); !forms.empty()) {
+        text += std::format("\n{}", columns(forms, column_width(forms)));
     }
-    std::vector<Row> rows;
-    for (const Option& option : command.options) {
-        rows.push_back(Row{.name = spelled(option), .meaning = option.help});
-    }
+    std::vector<Row> rows = rows_of(every_option(command, program));
     rows.push_back(Row{.name = "-h, --help", .meaning = "Show this help"});
-    text += std::format("\nOptions:\n{}", columns(rows));
+    text += std::format("\nOptions:\n{}", columns(rows, column_width(rows)));
     return text;
 }
 

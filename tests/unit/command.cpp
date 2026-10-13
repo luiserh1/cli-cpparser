@@ -34,8 +34,8 @@ TEST_CASE("an option's value is the next word or what follows its equals sign") 
         CAPTURE(words.front());
         const auto arguments = parse(words, build, program);
         REQUIRE(arguments.has_value());
-        REQUIRE(value_of(*arguments, "--piece") != nullptr);
-        REQUIRE(value_of(*arguments, "--zone") != nullptr);
+        REQUIRE(value_of(*arguments, "--piece").has_value());
+        REQUIRE(value_of(*arguments, "--zone").has_value());
         CHECK(*value_of(*arguments, "--piece") == "23");
         CHECK(*value_of(*arguments, "--zone") == "Front");
         CHECK(arguments->words == Words{});
@@ -62,14 +62,14 @@ TEST_CASE("the options are kept in the order they were given") {
 TEST_CASE("a value that starts with two dashes is taken after an equals sign") {
     const auto arguments = parse(Words{"--zone=--odd"}, build, program);
     REQUIRE(arguments.has_value());
-    REQUIRE(value_of(*arguments, "--zone") != nullptr);
+    REQUIRE(value_of(*arguments, "--zone").has_value());
     CHECK(*value_of(*arguments, "--zone") == "--odd");
 }
 
 TEST_CASE("only the first equals sign parts an option from its value") {
     const auto arguments = parse(Words{"--zone=a=b"}, build, program);
     REQUIRE(arguments.has_value());
-    REQUIRE(value_of(*arguments, "--zone") != nullptr);
+    REQUIRE(value_of(*arguments, "--zone").has_value());
     CHECK(*value_of(*arguments, "--zone") == "a=b");
 }
 
@@ -114,7 +114,7 @@ TEST_CASE("a word that is not two dashes and a name is a plain word") {
     // And so it can be an option's value.
     const auto value = parse(Words{"--piece", "-4"}, build, program);
     REQUIRE(value.has_value());
-    REQUIRE(value_of(*value, "--piece") != nullptr);
+    REQUIRE(value_of(*value, "--piece").has_value());
     CHECK(*value_of(*value, "--piece") == "-4");
 }
 
@@ -142,8 +142,8 @@ TEST_CASE("an option is asked for by its name") {
     CHECK(has(*arguments, "--all"));
     CHECK(has(*arguments, "--piece"));
     CHECK_FALSE(has(*arguments, "--zone"));
-    CHECK(value_of(*arguments, "--zone") == nullptr);
-    REQUIRE(value_of(*arguments, "--all") != nullptr);
+    CHECK_FALSE(value_of(*arguments, "--zone").has_value());
+    REQUIRE(value_of(*arguments, "--all").has_value());
     CHECK(*value_of(*arguments, "--all") == "");
     CHECK(cli_cpparser::value_or(*arguments, "--piece", "9") == "3");
     CHECK(cli_cpparser::value_or(*arguments, "--zone", "Front") == "Front");
@@ -197,12 +197,68 @@ TEST_CASE("a command's forms are its usage as they are written") {
 }
 
 TEST_CASE("a command is called by the program's name and its own") {
-    CHECK(cli_cpparser::invocation(build, "alfar") == "alfar build");
+    CHECK(cli_cpparser::invocation(build, program) == "alfar build");
     // A program with no commands has one table, without a name.
     static constexpr Command alone{.options = build_options};
-    CHECK(cli_cpparser::invocation(alone, "serve") == "serve");
-    CHECK(cli_cpparser::usage_text(alone, "serve") ==
+    static constexpr Program serve{.name = "serve"};
+    CHECK(cli_cpparser::invocation(alone, serve) == "serve");
+    CHECK(cli_cpparser::usage_text(alone, serve) ==
           "usage: serve [--all] [--piece N] [--zone Z]\n");
+}
+
+TEST_CASE("the value of a required option is read without a fallback") {
+    const auto arguments = parse(Words{"a.png", "--project=p"}, import, program);
+    REQUIRE(arguments.has_value());
+    CHECK(cli_cpparser::required_value(*arguments, "--project") == "p");
+    // An option that was not given has no value to read.
+    CHECK(cli_cpparser::required_value(*arguments, "--replace") == "");
+}
+
+TEST_CASE("a command's usage names its words as many times as it takes them") {
+    struct Row {
+        cli_cpparser::Words words;
+        std::string_view usage;
+    };
+    const std::array rows{
+        Row{.words = {}, .usage = "usage: alfar go\n"},
+        Row{.words = cli_cpparser::one_word("DIR"), .usage = "usage: alfar go DIR\n"},
+        Row{.words = cli_cpparser::any_words("DIR"), .usage = "usage: alfar go [DIR..]\n"},
+        Row{.words = {.least = 0, .most = 1, .name = "DIR"}, .usage = "usage: alfar go [DIR]\n"},
+        Row{.words = {.least = 2, .most = 2, .name = "DIR"}, .usage = "usage: alfar go DIR DIR\n"},
+        Row{.words = {.least = 2, .most = 3, .name = "DIR"},
+            .usage = "usage: alfar go DIR DIR [DIR]\n"},
+        Row{.words = {.least = 1, .most = cli_cpparser::any_number, .name = "DIR"},
+            .usage = "usage: alfar go DIR [DIR..]\n"},
+    };
+    for (const Row& row : rows) {
+        CAPTURE(row.usage);
+        const Command go{.name = "go", .words = row.words};
+        CHECK(cli_cpparser::usage_text(go, program) == row.usage);
+    }
+}
+
+TEST_CASE("the options a program shares are written after a command's own in its usage") {
+    CHECK(cli_cpparser::usage_text(build, with_folders) ==
+          "usage: alfar build [--all] [--piece N] [--zone Z] --project DIR [--work DIR]\n");
+    static constexpr Command add{
+        .name = "add", .options = photos_options, .words = cli_cpparser::one_word("FILE")};
+    CHECK(cli_cpparser::usage_text(add, with_folders) ==
+          "usage: alfar add [--add FILE] FILE --project DIR [--work DIR]\n");
+    static constexpr std::array forms{Form{.usage = "alfar zones --auto [--pieces N,N..]"},
+                                      Form{.usage = "alfar zones --check"}};
+    static constexpr Command zones{.name = "zones", .forms = forms};
+    CHECK(cli_cpparser::usage_text(zones, with_folders) ==
+          "usage: alfar zones --auto [--pieces N,N..] --project DIR [--work DIR]\n"
+          "       alfar zones --check --project DIR [--work DIR]\n");
+}
+
+TEST_CASE("a shared option is read like a command's own") {
+    const auto arguments =
+        parse(Words{"--work=w", "--piece", "3", "--project", "p"}, build, with_folders);
+    REQUIRE(arguments.has_value());
+    CHECK(cli_cpparser::required_value(*arguments, "--project") == "p");
+    CHECK(cli_cpparser::value_or(*arguments, "--work", "") == "w");
+    CHECK(cli_cpparser::value_or(*arguments, "--piece", "") == "3");
 }
 
 TEST_CASE("an option is written with the name of its value") {

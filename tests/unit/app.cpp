@@ -49,9 +49,10 @@ void check_rows(std::span<const Row> rows) {
 }
 
 constexpr std::string_view repeat_usage =
-    "usage: cli_cpparser repeat --times N [--separator TEXT] [--prefix TEXT] WORD\n";
+    "usage: cli_cpparser repeat --times N [--separator TEXT] [--final TEXT] WORD "
+    "[--prefix TEXT]\n";
 constexpr std::string_view sum_usage =
-    "usage: cli_cpparser sum [--scale X] [--show total|mean] [--prefix TEXT] [NUMBER..]\n";
+    "usage: cli_cpparser sum [--scale X] [--show total|mean] [NUMBER..] [--prefix TEXT]\n";
 constexpr std::string_view pick_usage =
     "usage: cli_cpparser pick --from A,B.. --at N [--prefix TEXT]\n"
     "       cli_cpparser pick --from A,B.. --last [--prefix TEXT]\n";
@@ -70,6 +71,10 @@ TEST_CASE("repeat prints its word the times asked") {
             .code = 0,
             .out = "> ha-ha\n",
             .err = ""},
+        Row{.words = {"repeat", "ha", "--times=3", "--separator", ", ", "--final", " and "},
+            .code = 0,
+            .out = "ha, ha and ha\n",
+            .err = ""},
     };
     check_rows(rows);
 }
@@ -87,7 +92,14 @@ TEST_CASE("repeat with a wrong command line says what to write and exits with 2"
         with("error: --separator needs a value: write --separator TEXT. (A value that starts "
              "with -- is written --separator=VALUE.)\n",
              repeat_usage);
+    const std::string final_alone = with("error: --final goes with --separator: give --separator "
+                                         "TEXT too, or leave --final out.\n",
+                                         repeat_usage);
     const std::array rows{
+        Row{.words = {"repeat", "ha", "--times", "2", "--final", "!"},
+            .code = 2,
+            .out = "",
+            .err = final_alone},
         Row{.words = {"repeat", "ha"}, .code = 2, .out = "", .err = no_times},
         Row{.words = {"repeat", "--times", "3"}, .code = 2, .out = "", .err = no_word},
         Row{.words = {"repeat", "ha", "--times", "101"}, .code = 2, .out = "", .err = too_many},
@@ -160,9 +172,9 @@ TEST_CASE("pick prints the part asked for in either of its forms") {
     check_rows(rows);
 }
 
-TEST_CASE("pick refuses what breaks its own rules with its two forms and exits with 2") {
-    const std::string neither = with("error: Neither --at nor --last is given. Write --at N for "
-                                     "the Nth part, or --last for the last one.\n",
+TEST_CASE("pick refuses what breaks the rules of its table with its two forms") {
+    const std::string neither = with("error: Neither --at nor --last is given. Give one of "
+                                     "them.\n",
                                      pick_usage);
     const std::string both =
         with("error: --at and --last are both given. Give one of them.\n", pick_usage);
@@ -200,16 +212,19 @@ TEST_CASE("the program's help lists its commands and pick's two forms") {
           "Usage: cli_cpparser <command> [options]\n"
           "\n"
           "Commands:\n"
-          "  repeat                    Print a word several times\n"
+          "  repeat WORD --times N     Print a word several times\n"
           "  sum                       Add numbers up\n"
           "  pick --from A,B.. --at N  Print the Nth part of a list\n"
           "  pick --from A,B.. --last  Print the last part of a list\n"
           "  help                      Show this list\n"
           "  --version                 Print the program's version\n"
           "\n"
-          "Every command takes --prefix TEXT. It exits with 0 when it did its work, with 1 "
-          "when it\n"
-          "could not, and with 2 when the command line is wrong.\n"
+          "Every command takes:\n"
+          "  --prefix TEXT             Text to print before the result\n"
+          "\n"
+          "A command exits with 0 when it did its work, with 1 when it could not, and with "
+          "2\n"
+          "when the command line is wrong.\n"
           "\n"
           "Run 'cli_cpparser <command> --help' for a command's options.\n");
 }
@@ -227,8 +242,8 @@ TEST_CASE("a command's help has its usage what it does and its options") {
     const std::array rows{
         Row{.words = {"sum", "--help"},
             .code = 0,
-            .out = "usage: cli_cpparser sum [--scale X] [--show total|mean] [--prefix TEXT] "
-                   "[NUMBER..]\n"
+            .out = "usage: cli_cpparser sum [--scale X] [--show total|mean] [NUMBER..] "
+                   "[--prefix TEXT]\n"
                    "\n"
                    "Prints the total of the numbers given, or their mean. A number may be "
                    "negative\n"
@@ -245,7 +260,8 @@ TEST_CASE("a command's help has its usage what it does and its options") {
             .out = "usage: cli_cpparser pick --from A,B.. --at N [--prefix TEXT]\n"
                    "       cli_cpparser pick --from A,B.. --last [--prefix TEXT]\n"
                    "\n"
-                   "Print one part of a list\n"
+                   "  pick --from A,B.. --at N  Print the Nth part of a list\n"
+                   "  pick --from A,B.. --last  Print the last part of a list\n"
                    "\n"
                    "Options:\n"
                    "  --from A,B..   The list, with commas between its parts\n"

@@ -113,9 +113,8 @@ TEST_CASE("a decimal number of up to 15 digits is the double nearest to it") {
         Row{.text = "0.123456789012345", .number = 0.123456789012345},
         Row{.text = "123456.789012345", .number = 123456.789012345},
         Row{.text = "-999999999999999", .number = -999999999999999.0},
-        Row{.text = "0.000000000000000000001", .number = 1e-21},
-        Row{.text = "100000000000000000000000", .number = 1e23},
-        Row{.text = "2.5000000000000000000000000", .number = 2.5},
+        Row{.text = "0.000000000000001", .number = 1e-15},
+        Row{.text = "7.38905609893065", .number = 7.38905609893065},
     };
     for (const Row& row : rows) {
         CAPTURE(row.text);
@@ -125,13 +124,45 @@ TEST_CASE("a decimal number of up to 15 digits is the double nearest to it") {
     }
 }
 
-TEST_CASE("a decimal number with more digits than a double holds is read closely") {
-    const auto pi = decimal_number("3.14159265358979323846264338327950288", "--scale");
-    REQUIRE(pi.has_value());
-    CHECK(*pi == doctest::Approx(3.14159265358979323846).epsilon(1e-15));
-    const auto tiny = decimal_number("0.000000000000000000000000000000123456789", "--scale");
-    REQUIRE(tiny.has_value());
-    CHECK(*tiny == doctest::Approx(1.23456789e-31).epsilon(1e-14));
+TEST_CASE("zeros before a decimal number and after its decimals are not counted as digits") {
+    struct Row {
+        std::string_view text;
+        double number;
+    };
+    const std::array rows{
+        Row{.text = "2.5000000000000000000000000", .number = 2.5},
+        Row{.text = "00000000000000000000042", .number = 42.0},
+        Row{.text = "0000000000.123456789012345000000", .number = 0.123456789012345},
+        Row{.text = "0.00000000000000000000", .number = 0.0},
+    };
+    for (const Row& row : rows) {
+        CAPTURE(row.text);
+        const auto number = decimal_number(row.text, "--scale");
+        REQUIRE(number.has_value());
+        CHECK(*number == row.number);
+    }
+}
+
+TEST_CASE("a decimal number of more than 15 digits is refused with how many it has") {
+    // It could only be read nearly, and what is read here is exact or refused.
+    struct Row {
+        std::string_view text;
+        int digits;
+    };
+    const std::array rows{
+        Row{.text = "3.14159265358979323846", .digits = 21},
+        Row{.text = "1234567890123456", .digits = 16},
+        Row{.text = "-0.1234567890123456", .digits = 16},
+        Row{.text = "0.0000000000000001", .digits = 16},
+        Row{.text = "1000000000000000", .digits = 16},
+    };
+    for (const Row& row : rows) {
+        CAPTURE(row.text);
+        CHECK(refusal(decimal_number(row.text, "--scale", {.least = 0, .most = 1})) ==
+              std::format("--scale takes a number of at most 15 digits, and '{}' has {}.", row.text,
+                          row.digits));
+        CHECK_FALSE(cli_cpparser::as_decimal_number(row.text).has_value());
+    }
 }
 
 TEST_CASE("minus zero is read as zero") {
@@ -142,16 +173,25 @@ TEST_CASE("minus zero is read as zero") {
 }
 
 TEST_CASE("text that is not all a decimal number is refused") {
-    const std::string too_large(400, '9');
-    const std::array<std::string_view, 21> texts{
-        "",     " 1", "1 ", "+1", "1e3", "1E3",     "0x1p3", "nan", "inf",   "-inf", "1,5",
-        "1..2", ".",  "-",  "1-", "x",   too_large, "--1",   "-.",  "1.2.3", "1-2",
+    const std::array<std::string_view, 20> texts{
+        "",    " 1",   "1 ", "+1", "1e3", "1E3", "0x1p3", "nan", "inf",   "-inf",
+        "1,5", "1..2", ".",  "-",  "1-",  "x",   "--1",   "-.",  "1.2.3", "1-2",
     };
     for (const std::string_view text : texts) {
         CAPTURE(text);
         CHECK(refusal(decimal_number(text, "--scale")) ==
               std::format("--scale takes a number, and '{}' is not one.", text));
+        CHECK_FALSE(cli_cpparser::as_decimal_number(text).has_value());
     }
+}
+
+TEST_CASE("a number is read without a message for a command that writes its own") {
+    CHECK(cli_cpparser::as_whole_number("023") == 23);
+    CHECK(cli_cpparser::as_whole_number("-4") == -4);
+    CHECK_FALSE(cli_cpparser::as_whole_number("1.5").has_value());
+    CHECK_FALSE(cli_cpparser::as_whole_number("").has_value());
+    CHECK(cli_cpparser::as_decimal_number("-0.25") == -0.25);
+    CHECK(cli_cpparser::as_decimal_number(".5") == 0.5);
 }
 
 TEST_CASE("a decimal number outside its range is refused with the range") {

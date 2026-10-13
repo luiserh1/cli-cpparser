@@ -7,9 +7,55 @@ Policy: cpp-policy v0.33.5.
 
 ## Unreleased
 
+What Alfar's and ToneMatcher's adoption of 0.1.0 asked for. Both adopted it without
+patching it; each kept code of its own for something the table could not say, and that is
+what these changes take in. A user of 0.1.0 has to change its tables and calls: every item
+marked **changed** breaks them.
+
+- **Changed:** the functions that took the program's name (`parse`, `usage_text`,
+  `invocation`, `help_text`, `usage_error`, `read`) take the `Program`. `Program` is
+  defined in `command/command.hpp`. They need the options the program shares, below; a
+  program with no commands passes a `Program` with its name alone.
+- `Program::shared`: options every command takes, given once. They are added to every
+  command's table, written after its own in the usage (after each hand-written form too)
+  and in its help, listed once in the program's help under "Every command takes", and the
+  required ones are named in its "Usage:" line. A required one that is missing is reported
+  before a command's own. Alfar wrote its three folders in thirteen usage lines and in
+  every table, and aligned its help's notes by hand to the library's column.
+- **Changed:** `Form::usage` is written without the shared options, for the same reason.
+- **Changed:** `Words` has `least` and `most` in place of `Count` (none, one, any):
+  `one_word("FILE")` and `any_words("FILE")` say what `Count::one` and `Count::any` said.
+  ToneMatcher's `diff DIR1 DIR2 [OUT_DIR]` takes two or three words and had to count them
+  itself.
+- `Command::choices` and `Command::needs`: one of several options and no more, and an
+  option that goes only with another, checked by the parser with its own messages. Four of
+  ToneMatcher's eleven hand-written messages and seven of Alfar's ten commands checked
+  such a rule themselves. The owner had ruled groups out for 0.1.0; these two shapes are
+  all the table takes.
+- **Changed:** `value_of` returns `std::optional<std::string_view>`, not a pointer:
+  cpp-policy's clang-tidy would not let the pointer be tested in an `if` without naming
+  its type, and ToneMatcher wrapped it for that.
+- `required_value(arguments, name)`: the value of a required option, without a fallback
+  nobody means.
+- **Changed:** a decimal number of more than 15 digits is refused, with how many it has,
+  and no longer read to within a few units of its last place. Every number read is now the
+  nearest double, the same on every system, so a program whose arithmetic must be bit for
+  bit (ToneMatcher's `--scale`) can use the reader.
+- `as_whole_number` and `as_decimal_number`: the number or nothing, for a command that
+  writes its own message. Alfar called `whole_number` and threw its message away.
+- `Command::listed`: how the program's help lists a command without forms ("export --out
+  DIR"). Five of Alfar's commands had a `Form`, with the whole usage by hand and the summary
+  twice, only to get that line.
+- **Changed:** the usage written from a table has the words after the command's own options
+  and before the shared ones ("alfar import FILE --project DIR"), as Alfar's read; and the
+  message for a missing word follows it.
+- A command's help shows its listed forms with their summaries when it has neither details
+  nor a summary, so that a command with forms needs no third sentence.
+- `run_command()`: what `run()` does once it has found the command, made public. Alfar's
+  window runs one command again, and going through `run()` linked every command into it:
+  270,000 bytes.
 - The README says that exit code 2 is the library's on every command, and when the link to
-  the library is `PUBLIC`; `Form`'s comment says that a form with only its usage is the
-  usual case. ToneMatcher's adoption found each of them missing.
+  the library is `PUBLIC`. ToneMatcher's adoption found each of them missing.
 
 ## 0.1.0 (2026-10-12)
 

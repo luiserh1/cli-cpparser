@@ -29,15 +29,17 @@ void print_result(const Arguments& arguments, std::string_view result, std::ostr
 std::expected<int, std::string> run_repeat(const Arguments& arguments, std::ostream& out,
                                            std::ostream& /*err*/) {
     // --times is required and the command takes one word: the parser has seen to both.
-    const auto times = cli_cpparser::whole_number(*cli_cpparser::value_of(arguments, "--times"),
-                                                  "--times", {.least = 1, .most = 100});
+    const auto times = cli_cpparser::whole_number(
+        cli_cpparser::required_value(arguments, "--times"), "--times", {.least = 1, .most = 100});
     if (!times) {
         return std::unexpected(times.error());
     }
     const std::string separator = cli_cpparser::value_or(arguments, "--separator", " ");
-    std::string result;
-    for (int count = 0; count < *times; ++count) {
-        result += std::format("{}{}", count == 0 ? "" : separator, arguments.words.front());
+    const std::string final = cli_cpparser::value_or(arguments, "--final", separator);
+    std::string result = arguments.words.front();
+    for (int count = 1; count < *times; ++count) {
+        result +=
+            std::format("{}{}", count == *times - 1 ? final : separator, arguments.words.front());
     }
     print_result(arguments, result, out);
     return exit_ok;
@@ -79,19 +81,14 @@ std::expected<int, std::string> run_sum(const Arguments& arguments, std::ostream
 
 std::expected<int, std::string> run_pick(const Arguments& arguments, std::ostream& out,
                                          std::ostream& err) {
-    const std::string* const at = cli_cpparser::value_of(arguments, "--at");
-    const bool last = cli_cpparser::has(arguments, "--last");
-    // A rule between two options is the command's own: the table can't say it.
-    if ((at != nullptr) == last) {
-        return std::unexpected(last ? "--at and --last are both given. Give one of them."
-                                    : "Neither --at nor --last is given. Write --at N for the "
-                                      "Nth part, or --last for the last one.");
-    }
-    const auto parts = cli_cpparser::list(*cli_cpparser::value_of(arguments, "--from"), "--from");
+    // One of --at and --last is given, and --from: the table says so and the parser checked.
+    const auto parts =
+        cli_cpparser::list(cli_cpparser::required_value(arguments, "--from"), "--from");
     if (!parts) {
         return std::unexpected(parts.error());
     }
-    if (last) {
+    const auto at = cli_cpparser::value_of(arguments, "--at");
+    if (!at) {
         print_result(arguments, parts->back(), out);
         return exit_ok;
     }

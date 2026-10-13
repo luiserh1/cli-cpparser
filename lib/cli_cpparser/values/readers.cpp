@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <charconv>
-#include <cmath>
 #include <cstdint>
 #include <format>
 #include <memory>
@@ -14,87 +13,52 @@ namespace cli_cpparser {
 
 namespace {
 
-// A whole number from text, strictly: the whole text is the number, or there is none.
-std::optional<int> whole_of(std::string_view text) {
-    const char* const end = std::to_address(text.end());
-    int number{};
-    const auto [last, error] = std::from_chars(std::to_address(text.begin()), end, number);
-    if (error != std::errc{} || last != end) {
-        return std::nullopt;
-    }
-    return number;
-}
-
-// Ten to a power that a double holds exactly.
-constexpr int most_exact_power = 22;
-double ten_to(int power) {
+// Ten to a power, exactly: a double holds every power up to the 22nd.
+double ten_to(std::size_t power) {
     double result = 1;
-    for (int at = 0; at < power; ++at) {
+    for (std::size_t at = 0; at < power; ++at) {
         result *= 10;
     }
     return result;
 }
 
-// The digits of a decimal number without its point, and the power of ten that puts it back:
-// "12.5" is 125 and -1.
-struct Digits {
-    std::uint64_t digits{};
-    int power{};
-};
-
-// Text as digits with at most one point among them; nothing for any other text. Digits past
-// those a std::uint64_t holds are dropped, which keeps more of them than a double has.
-std::optional<Digits> digits_of(std::string_view text) {
-    constexpr std::uint64_t most_before_another = 999'999'999'999'999'999;
-    Digits read;
-    bool any_digit = false;
-    bool after_point = false;
-    for (const char letter : text) {
-        if (letter == '.' && !after_point) {
-            after_point = true;
-            continue;
-        }
-        if (letter < '0' || letter > '9') {
-            return std::nullopt;
-        }
-        any_digit = true;
-        if (read.digits <= most_before_another) {
-            read.digits = (read.digits * 10) + static_cast<std::uint64_t>(letter - '0');
-            read.power -= after_point ? 1 : 0;
-        } else {
-            read.power += after_point ? 0 : 1;
-        }
-    }
-    if (!any_digit) {
-        return std::nullopt;
-    }
-    return read;
+bool all_digits(std::string_view text) {
+    return std::ranges::all_of(text, [](char letter) { return letter >= '0' && letter <= '9'; });
 }
+
+// Why text is no decimal number that can be read.
+struct NotRead {
+    std::size_t digits{}; // how many it has, when they are too many; 0: it is no number
+};
 
 // A decimal number from text, strictly, as the header says. It is this file's own and not
 // std::from_chars, which macOS has for a double only from version 26 on, nor the C
-// runtime's, which reads by the machine's language. A number of up to 15 digits is one
-// division or one product of two exact numbers, so it is the nearest double.
-std::optional<double> decimal_of(std::string_view text) {
+// runtime's, which reads by the machine's language. With at most 15 digits, the digits are
+// a whole number a double holds exactly, and so is the power of ten they are divided by:
+// one division of two exact numbers gives the nearest double.
+std::expected<double, NotRead> decimal_of(std::string_view text) {
     const bool negative = text.starts_with('-');
-    const auto read = digits_of(negative ? text.substr(1) : text);
-    if (!read) {
-        return std::nullopt;
+    const std::string_view written = negative ? text.substr(1) : text;
+    const std::size_t point = std::min(written.find('.'), written.size());
+    std::string_view whole = written.substr(0, point);
+    std::string_view decimals = written.substr(std::min(point + 1, written.size()));
+    if (!all_digits(whole) || !all_digits(decimals) || (whole.empty() && decimals.empty())) {
+        return std::unexpected(NotRead{});
     }
-    auto number = static_cast<double>(read->digits);
-    for (int left = -read->power; left > 0; left -= most_exact_power) {
-        number /= ten_to(std::min(left, most_exact_power));
+    whole = whole.substr(std::min(whole.find_first_not_of('0'), whole.size()));
+    decimals = decimals.substr(0, decimals.find_last_not_of('0') + 1);
+    const std::size_t digits = whole.size() + decimals.size();
+    if (digits > most_decimal_digits) {
+        return std::unexpected(NotRead{.digits = digits});
     }
-    for (int left = read->power; left > 0; left -= most_exact_power) {
-        number *= ten_to(std::min(left, most_exact_power));
+    std::uint64_t value = 0;
+    for (const std::string_view part : {whole, decimals}) {
+        for (const char letter : part) {
+            value = (value * 10) + static_cast<std::uint64_t>(letter - '0');
+        }
     }
-    if (!std::isfinite(number)) {
-        return std::nullopt;
-    }
-    if (number == 0) {
-        return 0.0; // "-0" is zero
-    }
-    return negative ? -number : number;
+    const double number = static_cast<double>(value) / ten_to(decimals.size());
+    return negative && value != 0 ? -number : number; // "-0" is zero
 }
 
 // What follows "a whole number" in a message: ", 1 or more,", " from 16 to 4096,", or the
@@ -127,17 +91,39 @@ std::expected<Number, std::string> in_range(std::optional<Number> number, const 
 
 } // namespace
 
+std::optional<int> as_whole_number(std::string_view text) {
+    const char* const end = std::to_address(text.end());
+    int number{};
+    const auto [last, error] = std::from_chars(std::to_address(text.begin()), end, number);
+    if (error != std::errc{} || last != end) {
+        return std::nullopt;
+    }
+    return number;
+}
+
+std::optional<double> as_decimal_number(std::string_view text) {
+    const auto number = decimal_of(text);
+    return number ? std::optional{*number} : std::nullopt;
+}
+
 std::expected<int, std::string> whole_number(std::string_view text, std::string_view option,
                                              WholeRange range) {
-    return in_range(whole_of(text), range,
+    return in_range(as_whole_number(text), range,
                     std::format("{} takes a whole number{} and '{}' is not one.", option,
                                 range_text(range), text));
 }
 
 std::expected<double, std::string> decimal_number(std::string_view text, std::string_view option,
                                                   DecimalRange range) {
+    const auto number = decimal_of(text);
+    if (!number && number.error().digits != 0) {
+        return std::unexpected(std::format("{} takes a number of at most {} digits, and '{}' "
+                                           "has {}.",
+                                           option, most_decimal_digits, text,
+                                           number.error().digits));
+    }
     return in_range(
-        decimal_of(text), range,
+        number ? std::optional{*number} : std::nullopt, range,
         std::format("{} takes a number{} and '{}' is not one.", option, range_text(range), text));
 }
 

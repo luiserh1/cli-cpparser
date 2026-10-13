@@ -12,11 +12,18 @@
 namespace tables {
 
 using cli_cpparser::Command;
-using cli_cpparser::Count;
 using cli_cpparser::Option;
+using cli_cpparser::Program;
 using Words = std::vector<std::string>;
 
-constexpr std::string_view program = "alfar";
+constexpr Program program{.name = "alfar"};
+
+// The same program with two options every command shares, one of them required.
+constexpr std::array folders{
+    Option{.name = "--project", .value = "DIR", .help = "The project's folder", .required = true},
+    Option{.name = "--work", .value = "DIR", .help = "In place of <project>/work"},
+};
+constexpr Program with_folders{.name = "alfar", .shared = folders};
 
 // A flag and two options that take a value; no words.
 constexpr std::array build_options{
@@ -34,7 +41,7 @@ constexpr std::array import_options{
 constexpr Command import{
     .name = "import",
     .options = import_options,
-    .words = {.count = Count::one, .name = "FILE"},
+    .words = cli_cpparser::one_word("FILE"),
 };
 
 // Any number of words.
@@ -42,7 +49,7 @@ constexpr std::array photos_options{Option{.name = "--add", .value = "FILE"}};
 constexpr Command photos{
     .name = "photos",
     .options = photos_options,
-    .words = {.count = Count::any, .name = "FILE"},
+    .words = cli_cpparser::any_words("FILE"),
 };
 
 // Two required options, one with its own words for when it is missing.
@@ -60,8 +67,9 @@ constexpr Command exporting{.name = "export", .options = export_options};
 constexpr Command status{.name = "status"};
 
 // Why the words are refused; empty when they are not.
-inline std::string refusal(const Words& words, const Command& command = build) {
-    const auto arguments = cli_cpparser::parse(words, command, program);
+inline std::string refusal(const Words& words, const Command& command = build,
+                           const Program& of = program) {
+    const auto arguments = cli_cpparser::parse(words, command, of);
     return arguments ? std::string{} : arguments.error();
 }
 

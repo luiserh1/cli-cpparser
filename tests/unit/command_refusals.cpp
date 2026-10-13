@@ -124,23 +124,21 @@ TEST_CASE("the first mistake among the words is the one reported") {
 
 TEST_CASE("a program with no commands is named alone in the messages") {
     static constexpr std::array options{Option{.name = "--port", .value = "N", .required = true}};
-    static constexpr Command serve{.options = options,
-                                   .words = {.count = Count::one, .name = "DIR"}};
-    struct Said {
-        Words words;
-        std::string_view says;
-    };
+    static constexpr Command serve{.options = options, .words = cli_cpparser::one_word("DIR")};
+    static constexpr Program server{.name = "serve"};
     const std::array rows{
-        Said{.words = Words{"--fast"},
-             .says = "'serve' has no option --fast. Its options are --port N."},
-        Said{.words = Words{}, .says = "'serve' needs its DIR: write serve --port N DIR."},
-        Said{.words = Words{"site"},
-             .says = "--port is missing: 'serve' needs it. Write --port N."},
+        Row{.what = "an option it has not",
+            .words = Words{"--fast"},
+            .says = "'serve' has no option --fast. Its options are --port N."},
+        Row{.what = "no word",
+            .words = Words{},
+            .says = "'serve' needs its DIR: write serve --port N DIR."},
+        Row{.what = "no port",
+            .words = Words{"site"},
+            .says = "--port is missing: 'serve' needs it. Write --port N."},
     };
-    for (const Said& row : rows) {
-        CAPTURE(row.says);
-        const auto arguments = cli_cpparser::parse(row.words, serve, "serve");
-        REQUIRE_FALSE(arguments.has_value());
-        CHECK(arguments.error() == row.says);
+    for (const Row& row : rows) {
+        CAPTURE(row.what);
+        CHECK(refusal(row.words, serve, server) == row.says);
     }
 }

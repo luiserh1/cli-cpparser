@@ -17,8 +17,12 @@ Licence: MIT.
 - An option given twice is an error. So is one the command has not, one without its value
   or with an empty one, a flag given a value, and a required option left out.
 - A value that starts with `--` is written `--name=VALUE`.
-- The words that are no options are checked against what the command takes: none, exactly
-  one, or any number.
+- The words that are no options are checked against how many the command takes: none, one,
+  two or three, any number.
+- A table can say two rules between options: that one of several is given and no more
+  (`--auto` or `--check`), and that one goes only with another (`--zone` with `--piece`).
+- A number is read strictly: the whole text is the number or it is refused, and a decimal
+  number has at most 15 digits, so that what is read is exactly what was written.
 - A program exits with 0 when it did its work, with 1 when it could not, and with 2 when
   the command line is wrong.
   Code 2 is the library's on every command: a program's own codes, if it has any, start
@@ -28,7 +32,7 @@ Every error is one message that names the option and says what to write:
 
 ```
 error: --times takes a whole number from 1 to 100, and '101' is not one.
-usage: cli_cpparser repeat --times N [--separator TEXT] [--prefix TEXT] WORD
+usage: cli_cpparser repeat --times N [--separator TEXT] [--final TEXT] WORD [--prefix TEXT]
 ```
 
 ## Using it
@@ -43,7 +47,7 @@ using namespace cli_cpparser;
 
 std::expected<int, std::string> run_resize(const Arguments& arguments, std::ostream& out,
                                            std::ostream& err) {
-    const auto size = whole_number(*value_of(arguments, "--size"), "--size",
+    const auto size = whole_number(required_value(arguments, "--size"), "--size",
                                    {.least = 16, .most = 4096});
     if (!size) {
         return std::unexpected(size.error()); // printed with the usage; exit code 2
@@ -56,16 +60,23 @@ constexpr std::array resize_options{
     Option{.name = "--size", .value = "N", .help = "The new width, 16 to 4096",
            .required = true},
     Option{.name = "--keep", .help = "Keep the original file"},
+    Option{.name = "--out", .value = "FILE", .help = "Where to write it"},
 };
+constexpr std::array resize_choices{Choice{.among = {"--keep", "--out"}}}; // not both
 constexpr std::array commands{
     Command{.name = "resize",
             .summary = "Resize an image",
             .options = resize_options,
-            .words = {.count = Count::one, .name = "FILE"},
+            .words = one_word("FILE"),
+            .choices = resize_choices,
             .run = run_resize},
 };
+constexpr std::array shared{
+    Option{.name = "--quiet", .help = "Print nothing but errors"}, // every command takes it
+};
 constexpr Program program{.name = "imagetool", .version = "1.0.0",
-                          .summary = "works on images", .commands = commands};
+                          .summary = "works on images", .commands = commands,
+                          .shared = shared};
 
 // In main, with the words after the program's name:
 //     return cli_cpparser::run(program, words, std::cout, std::cerr);
@@ -76,16 +87,23 @@ constexpr Program program{.name = "imagetool", .version = "1.0.0",
 
 | Header | What it has |
 |---|---|
-| `cli_cpparser/command/command.hpp` | The table (`Option`, `Words`, `Form`, `Command`), the arguments read (`Arguments`, `has`, `value_of`, `value_or`), and `joined()` for lists of options several commands share |
+| `cli_cpparser/command/command.hpp` | The table (`Option`, `Words`, `Form`, `Choice`, `Needs`, `Command`, `Program`), the arguments read (`Arguments`, `has`, `value_of`, `value_or`, `required_value`), and `joined()` for lists of options some commands share |
 | `cli_cpparser/command/parse.hpp` | `parse()`, with every rule and every message |
 | `cli_cpparser/command/usage.hpp` | A command's usage as text |
-| `cli_cpparser/values/readers.hpp` | An option's value as a whole number or a decimal number in a range, a list with commas, or one word of a set |
-| `cli_cpparser/program/program.hpp` | `Program`, `run()`, the help texts, the exit codes, and `read()` for a program with no commands |
+| `cli_cpparser/values/readers.hpp` | An option's value as a whole number or a decimal number in a range, a list with commas, or one word of a set; and the two numbers without a message |
+| `cli_cpparser/program/program.hpp` | `run()`, `run_command()` for one command alone, the help texts, the exit codes, and `read()` for a program with no commands |
 
-A program with no commands has one `Command` without a name and calls `read()` itself.
-A command whose forms a table can't say (`zones --auto ..` / `zones --check`) writes them by
-hand as `Form`s. A rule between options ("one of `--at` and `--last`") is the command's own:
-it returns the message. `src/app/` is a whole example.
+- **Options every command takes** are given once, in `Program::shared`: they are added to
+  every command's table, usage and help, and listed once in the program's help. Options
+  only some commands share are joined to those commands' own with `joined()`.
+- **A command with several forms** (`zones --auto ..` / `zones --check`) writes them by hand
+  as `Form`s; the library writes the shared options after each.
+- **A rule the table can't say** ("words only with `--add`") is the command's own: it
+  returns the message, and the library prints it with the usage.
+- **A program with no commands** has one `Command` without a name and calls `read()`.
+- **A program's own exit codes** start at 3: 0, 1 and 2 are the library's on every command.
+
+`src/app/` is a whole example.
 
 In the project that uses it (`<commit>` is a release's commit; see `CHANGELOG.md`):
 
@@ -169,7 +187,7 @@ The library, in `lib/cli_cpparser/`:
 | Layer | Module | Contents |
 |---|---|---|
 | 2 | `program/` | A program's table of commands: the dispatch, the help texts, the exit codes |
-| 1 | `command/` | A command's table, the parser, the arguments read, the usage text |
+| 1 | `command/` | A command's and a program's table, the parser with its checks, the arguments read, the usage text |
 | 1 | `values/` | Typed readers of an option's value |
 
 `tests/unit/` has one doctest program per module (`cpp_policy_add_tests()` in

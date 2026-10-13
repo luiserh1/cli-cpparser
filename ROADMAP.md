@@ -8,8 +8,6 @@ follows cpp-policy's POLICY.md, section 11.5.
 
 - [ ] A reader of whole numbers larger than `int` (`std::int64_t`), when a program has an
       option that needs one (a size in bytes).
-- [ ] A text appended to every hand-written usage line (`usage_tail`), if writing the
-      shared options out in each line proves a burden in Alfar.
 
 ## Not planned
 
@@ -22,5 +20,11 @@ follows cpp-policy's POLICY.md, section 11.5.
   that name.
 - An option that may have an empty value: an empty value is nearly always an unset shell
   variable. A program that wants "none" has a flag for it.
-- Groups of options in the table ("one of `--piece` and `--all`"): the command checks them
-  and writes its forms by hand.
+- Rules between options beyond the two the table has (one of several; one only with
+  another): no nesting and no conditions. A command checks anything else and returns the
+  message.
+- A decimal number of more than 15 digits: reading it exactly at any length is several
+  hundred lines for input nobody types, and reading it nearly is what 0.1.0 did and
+  ToneMatcher could not use.
+- Wrapping the help to the terminal's width: the width is the operating system's to say,
+  and the library has no such code. A program breaks its long lines by hand.
