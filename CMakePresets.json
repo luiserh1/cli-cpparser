@@ -72,7 +72,8 @@
       "hidden": true,
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CPP_POLICY_HARDENING": "fast"
+        "CPP_POLICY_HARDENING": "fast",
+        "CPP_POLICY_RANDOM_TEST_ORDER": "ON"
       }
     },
     {
@@ -281,7 +282,8 @@
       },
       "execution": {
         "timeout": 60,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
@@ -311,7 +313,8 @@
       },
       "execution": {
         "timeout": 60,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
@@ -331,7 +334,8 @@
       },
       "execution": {
         "timeout": 60,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
@@ -346,7 +350,8 @@
       },
       "execution": {
         "timeout": 180,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
@@ -361,7 +366,8 @@
       },
       "execution": {
         "timeout": 60,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
@@ -385,7 +391,8 @@
       },
       "execution": {
         "timeout": 60,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
@@ -400,7 +407,8 @@
       },
       "execution": {
         "timeout": 60,
-        "jobs": 4,
+        "jobs": 8,
+        "noTestsAction": "error",
         "repeat": {
           "mode": "after-timeout",
           "count": 2
