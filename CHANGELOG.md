@@ -7,6 +7,13 @@ Policy: cpp-policy v0.42.0.
 
 ## Unreleased
 
+## 0.4.1 (2026-11-08)
+
+No change to the library: `lib/` is as in 0.4.0, and a user changes only its pin. It is
+built and checked with cpp-policy v0.42.0, upgraded from v0.37.0 through v0.38.0 and
+v0.39.0, so that the projects that use it can move to that release with a library checked
+by it. A user still needs cpp-policy v0.34.0 or later.
+
 ## 0.4.0 (2026-10-13)
 
 What Alfar's adoption of 0.2.0 asked for. A user of 0.3.0 changes nothing in its tables or
